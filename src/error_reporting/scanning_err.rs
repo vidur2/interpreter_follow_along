@@ -1,22 +1,24 @@
 use super::error_reporter::Unwindable;
 
-pub type Result<T> = std::result::Result<T, ScanningError>;
+pub type Result<T> = std::result::Result<T, ScanningException>;
 
 #[derive(Clone)]
-pub enum ScanningError {
+pub enum ScanningException {
     Tokenization,
     Newline,
-    Reading,
-    Scanning,
+    Ignore,
+    Commment,
+    String,
+    Number,
+    UnterminatedString
 }
 
-impl Unwindable for ScanningError {
+impl Unwindable for ScanningException {
     fn get_value(&self) -> String {
         match self {
-            ScanningError::Tokenization => String::from("Tokenization Error"),
-            ScanningError::Newline => String::new(),
-            ScanningError::Reading => String::from("Reading Error"),
-            ScanningError::Scanning => String::from("Scanning Error"),
+            ScanningException::Tokenization => String::from("Tokenization Error"),
+            ScanningException::UnterminatedString => String::from("Unterminated String"),
+            _ => String::new(),
         }
     }
 }
