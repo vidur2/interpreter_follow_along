@@ -1,7 +1,17 @@
+#![feature(let_chains)]
+
+mod ast;
 mod error_reporting;
 mod scanner;
+mod parser;
 
 use std::env;
+
+use ast::ast_printer::AstPrinter;
+
+static PRINTER: AstPrinter = AstPrinter;
+
+
 
 fn main() {
     let args: Vec<String> = env::args().collect();

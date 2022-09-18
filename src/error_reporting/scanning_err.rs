@@ -10,7 +10,7 @@ pub enum ScanningException {
     Commment,
     String,
     Number,
-    UnterminatedString
+    UnterminatedString,
 }
 
 impl Unwindable for ScanningException {
