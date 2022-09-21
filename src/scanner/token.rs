@@ -2,9 +2,8 @@ use std::{convert::TryInto, fmt::Display};
 
 use crate::error_reporting::{error_reporter::Literal, scanning_err::ScanningException};
 
-use super::scanner::Scanner;
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[repr(u8)]
 pub enum TokenType {
     // Single-character tokens.
     LEFT_PAREN,
@@ -161,6 +160,7 @@ pub enum Primitive {
     Float(f32),
     Int(isize),
     String(String),
+    Bool(bool),
     None,
 }
 
@@ -170,6 +170,7 @@ impl Primitive {
             Primitive::Float(float) => Some(float.to_string()),
             Primitive::Int(int) => Some(int.to_string()),
             Primitive::String(strng) => Some(strng.to_string()),
+            Primitive::Bool(boolean) => Some(boolean.to_string()),
             Primitive::None => None,
         }
     }
@@ -177,10 +178,10 @@ impl Primitive {
 
 #[derive(Debug, Clone)]
 pub struct Token {
-    tok: TokenType,
+    pub tok: TokenType,
     pub lexeme: String,
-    line: usize,
-    literal: Option<Primitive>,
+    pub line: usize,
+    pub literal: Option<Primitive>,
 }
 
 impl Token {

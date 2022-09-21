@@ -11,25 +11,30 @@ pub struct Expr {
     pub operator: Token,
 }
 
+#[derive(Clone)]
 pub struct Binary {
-    pub left: Expr,
-    pub right: Expr,
+    pub left: Box<ExprPossibilities>,
+    pub right: Box<ExprPossibilities>,
     pub operator: Token,
 }
 
+#[derive(Clone)]
 pub struct Grouping {
-    pub expr: Expr,
+    pub expr: Box<ExprPossibilities>,
 }
 
+#[derive(Clone)]
 pub struct Literal {
     pub literal: Primitive,
 }
 
+#[derive(Clone)]
 pub struct Unary {
     pub operator: Token,
-    pub right: Expr,
+    pub right: Box<ExprPossibilities>,
 }
 
+#[derive(Clone)]
 pub enum ExprPossibilities {
     Expr(Expr),
     Binary(Binary),

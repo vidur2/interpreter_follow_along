@@ -1,5 +1,3 @@
-
-
 use super::ast_types::ExprPossibilities;
 
 pub trait Accept<R> {

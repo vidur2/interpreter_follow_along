@@ -19,12 +19,12 @@ pub struct Scanner {
 }
 
 impl ErrorReport for Scanner {
-    fn print_error<E: Unwindable, T: Display + Literal>(error: E, literal: T) {
+    fn print_error<E: Unwindable, T: Display + Literal + Clone>(error: E, literal: Option<T>) {
         println!(
             "{} on token: {:#} on line {}",
             error.get_value(),
-            literal,
-            literal.get_line()
+            literal.clone().unwrap(),
+            literal.unwrap().get_line()
         );
     }
 }
@@ -108,7 +108,7 @@ impl Scanner {
         }
 
         for (err, tok) in self.error.drain(0..) {
-            Self::print_error(err, tok);
+            Self::print_error(err, Some(tok));
         }
     }
 

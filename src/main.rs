@@ -1,17 +1,17 @@
 #![feature(let_chains)]
+#![feature(const_for)]
+#![feature(const_mut_refs)]
 
 mod ast;
 mod error_reporting;
-mod scanner;
 mod parser;
+mod scanner;
 
 use std::env;
 
 use ast::ast_printer::AstPrinter;
 
 static PRINTER: AstPrinter = AstPrinter;
-
-
 
 fn main() {
     let args: Vec<String> = env::args().collect();
