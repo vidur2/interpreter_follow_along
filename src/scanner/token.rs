@@ -53,6 +53,7 @@ pub enum TokenType {
     WHILE,
     CLOS,
     SWITCH,
+    FUNC,
 
     ERROR,
 
@@ -142,6 +143,7 @@ impl TokenType {
             "while" => TokenType::WHILE,
             "varclos" => TokenType::CLOS,
             "switch" => TokenType::SWITCH,
+            "func" => TokenType::FUNC,
             _ => TokenType::IDENTIFIER,
         }
     }

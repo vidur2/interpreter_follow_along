@@ -1,8 +1,8 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, fmt::Display};
 
 use crate::{
     ast::ast_types::{Binary, Expr, ExprPossibilities, Literal, Unary},
-    error_reporting::{error_reporter::ErrorReport, parsing_err::ParsingException},
+    error_reporting::{error_reporter::{ErrorReport, Unwindable}, parsing_err::ParsingException},
     scanner::token::{Token, TokenType},
 };
 
@@ -17,16 +17,21 @@ impl Parser {
         return Self { current: 0, tokens };
     }
 
-    fn expression(&mut self) -> Result<ExprPossibilities, ParsingException> {
-        let eq = self.equality();
-        match eq {
-            Ok(expr) => return Ok(expr),
-            Err(e) => {
-                // Self::print_error(e, None);
-
-                return Err(e);
-            },
+    pub fn parse(&mut self) -> Option<ExprPossibilities> {
+        let expr_wrapped = self.expression();
+        if let Ok(expr) = expr_wrapped {
+            println!("{:?}", expr);
+            return Some(expr);
+        } else  if let Err(err) = expr_wrapped {
+            println!("{}", err.get_value());
+            return None;
+        } else {
+            return None;
         }
+    }
+
+    fn expression(&mut self) -> Result<ExprPossibilities, ParsingException> {
+        return self.equality();
     }
 
     fn equality(&mut self) -> Result<ExprPossibilities, ParsingException> {
@@ -94,7 +99,7 @@ impl Parser {
     }
 
     fn unary(&mut self) -> Result<ExprPossibilities, ParsingException> {
-        if (self.match_tok(&[TokenType::BANG, TokenType::MINUS])) {
+        if self.match_tok(&[TokenType::BANG, TokenType::MINUS]) {
             let operator = self.previous().clone();
             let right = self.unary()?;
 
@@ -123,7 +128,7 @@ impl Parser {
 
         if self.match_tok(&[TokenType::INTEGER, TokenType::STRING, TokenType::FLOAT]) {
             return Ok(ExprPossibilities::Literal(Literal {
-                literal: self.peek().clone().literal.unwrap(),
+                literal: self.previous().clone().literal.unwrap(),
             }));
         }
 
@@ -134,18 +139,18 @@ impl Parser {
             }
         }
 
-        todo!();
+        return Err(ParsingException::InvalidExpr(self.peek().clone()));
     }
 
-    fn match_tok(&self, tok_types: &[TokenType]) -> bool {
+    fn match_tok(&mut self, tok_types: &[TokenType]) -> bool {
         if !self.is_at_end() {
             for tok_type in tok_types.iter() {
                 if self.check(tok_type) {
+                    self.advance();
                     return true;
                 }
             }
         }
-
         return false;
     }
 
@@ -153,18 +158,19 @@ impl Parser {
         if self.is_at_end() {
             return false;
         };
+
         return &self.peek().tok == tok_type;
     }
 
     fn advance(&mut self) -> &Token {
-        if self.is_at_end() {
+        if !self.is_at_end() {
             self.current += 1
         };
         return self.previous();
     }
 
     fn is_at_end(&self) -> bool {
-        return self.current == self.tokens.len() - 1;
+        return self.tokens[self.current].tok == TokenType::EOF;
     }
 
     fn previous(&self) -> &Token {
@@ -187,16 +193,27 @@ impl Parser {
             self.peek().clone(),
         ));
     }
-}
 
-impl ErrorReport for Parser {
-    fn print_error<
-        E: crate::error_reporting::error_reporter::Unwindable,
-        T: std::fmt::Display + crate::error_reporting::error_reporter::Literal,
-    >(
-        error: E,
-        literal: Option<T>,
-    ) {
-        println!("{}", error.get_value())
+    fn synchronize(&mut self) {
+        self.advance();
+
+        while !self.is_at_end() {
+            let tok = &self.previous().tok;
+            if Self::multi_cmp(&[TokenType::SEMICOLON, TokenType::FUNC, TokenType::LET, TokenType::FOR, TokenType::WHILE, TokenType::IF, TokenType::PRINT, TokenType::RETURN], &tok) {
+                return;
+            } else {
+                self.advance();
+            }
+        }
+    }
+
+    fn multi_cmp(tok_type: &[TokenType], tok: &TokenType) -> bool {
+        for tok_cmp in tok_type.iter() {
+            if tok == tok_cmp {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

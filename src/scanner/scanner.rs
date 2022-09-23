@@ -1,7 +1,7 @@
-use crate::error_reporting::{
+use crate::{error_reporting::{
     error_reporter::{ErrorReport, Literal, Unwindable},
     scanning_err::ScanningException,
-};
+}, parser::parser::Parser};
 
 use super::token::{Primitive, Token, TokenType};
 
@@ -76,8 +76,12 @@ impl Scanner {
                 if line.contains("exit()") {
                     break;
                 } else {
+                    lexer.token.pop();
                     lexer.read_as_buff(line);
                     lexer.tokenize_buff();
+                    lexer.token.push(Token { tok: TokenType::EOF, lexeme: String::new(), line: usize::MAX, literal: None });
+                    let mut parser = Parser::new(lexer.token.clone());
+                    parser.parse();
                     lexer.curr_char = 0;
                     lexer.start = 0;
                 }

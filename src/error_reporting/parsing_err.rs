@@ -7,6 +7,7 @@ pub type Result<'a, T> = std::result::Result<T, ParsingException>;
 #[derive(Clone, Debug)]
 pub enum ParsingException {
     UnterminatedParenthesis(Token),
+    InvalidExpr(Token),
     PlaceHolder,
 }
 
@@ -17,6 +18,7 @@ impl Unwindable for ParsingException {
                 "Parsing Errror: Unterminated Parenthesis on line: {}",
                 tok.line
             ),
+            Self::InvalidExpr(tok) => format!("Parsing Error: Invalid Expression on line: {}", tok.line),
             ParsingException::PlaceHolder => String::from("Limitation of rust borrow checker"),
         }
     }
