@@ -1,7 +1,10 @@
-use crate::{error_reporting::{
-    error_reporter::{ErrorReport, Literal, Unwindable},
-    scanning_err::ScanningException,
-}, parser::parser::Parser};
+use crate::{
+    error_reporting::{
+        error_reporter::{ErrorReport, Literal, Unwindable},
+        scanning_err::ScanningException,
+    },
+    parser::parser::Parser,
+};
 
 use super::token::{Primitive, Token, TokenType};
 
@@ -52,6 +55,10 @@ impl Scanner {
         }
     }
 
+    pub fn get_buff(&self) -> Vec<Token> {
+        return self.token.clone();
+    }
+
     fn start_scanner() -> Self {
         return Self {
             buff: String::new(),
@@ -79,9 +86,22 @@ impl Scanner {
                     lexer.token.pop();
                     lexer.read_as_buff(line);
                     lexer.tokenize_buff();
-                    lexer.token.push(Token { tok: TokenType::EOF, lexeme: String::new(), line: usize::MAX, literal: None });
+                    // println!("{:?}", lexer.token);
+                    lexer.token.push(Token {
+                        tok: TokenType::EOF,
+                        lexeme: String::new(),
+                        line: usize::MAX,
+                        literal: None,
+                    });
+
                     let mut parser = Parser::new(lexer.token.clone());
-                    parser.parse();
+
+                    while !parser.is_at_end() {
+                        let expr = parser.parse();
+                        if let Err(err) = expr {
+                            parser.current += 1;
+                        }
+                    }
                     lexer.curr_char = 0;
                     lexer.start = 0;
                 }
@@ -99,6 +119,7 @@ impl Scanner {
         let buff_len_idx = self.buff.len() - 1;
         let cloned_ref = self.clone();
         let bytes = cloned_ref.buff.as_bytes();
+    
 
         while !self.is_at_end() {
             let c: char = bytes[self.curr_char] as char;
@@ -196,7 +217,7 @@ impl Scanner {
                 } else {
                     self.add_token(TokenType::INTEGER, Some(Primitive::Int(num_val)))
                 }
-
+                self.curr_char -= 1;
                 break;
             } else if curr_char <= '9' && curr_char >= '0' && has_decimal {
                 float_val +=

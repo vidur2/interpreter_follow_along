@@ -19,6 +19,9 @@ pub enum TokenType {
     SEMICOLON,
     SLASH,
     STAR,
+    MODULO,
+    TERNARYTRUE,
+    TERNARYFALSE,
 
     // One or two character tokens.
     BANG,
@@ -78,6 +81,9 @@ impl TokenType {
             '+' => Ok((TokenType::PLUS, 1)),
             ';' => Ok((TokenType::SEMICOLON, 1)),
             '*' => Ok((TokenType::STAR, 1)),
+            '%' => Ok((TokenType::MODULO, 1)),
+            '?' => {Ok((TokenType::TERNARYTRUE, 1))},
+            ':' => Ok((TokenType::TERNARYFALSE, 1)),
             '>' => {
                 if Self::match_char(next, '=') {
                     return Ok((TokenType::GREATER_EQUAL, 2));
