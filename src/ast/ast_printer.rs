@@ -2,7 +2,7 @@ use crate::scanner::token::Primitive;
 
 use super::{
     ast_traits::{Accept, Interperable},
-    ast_types::{Expr, ExprPossibilities},
+    expr_types::{ExprPossibilities},
 };
 
 pub struct AstPrinter;
@@ -26,7 +26,7 @@ impl AstPrinter {
 }
 
 impl Interperable<Option<String>> for &AstPrinter {
-    fn visit_expr(&self, expr: super::ast_types::ExprPossibilities) -> Option<String> {
+    fn visit_expr(&self, expr: super::expr_types::ExprPossibilities) -> Option<String> {
         let mut expr_arr: [Option<Box<ExprPossibilities>>; 2] = [None, None];
         match expr {
             ExprPossibilities::Binary(bin_expr) => {

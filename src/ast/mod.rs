@@ -1,3 +1,3 @@
 pub mod ast_printer;
 pub mod ast_traits;
-pub mod ast_types;
+pub mod expr_types;

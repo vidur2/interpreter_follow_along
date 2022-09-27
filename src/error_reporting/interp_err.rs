@@ -1,4 +1,4 @@
-use crate::{scanner::token::{Token, TokenType}, ast::ast_types::{Unary, Binary}};
+use crate::{scanner::token::{TokenType}, ast::expr_types::{Unary, Binary}};
 
 use super::error_reporter::Unwindable;
 
@@ -8,6 +8,9 @@ pub type Result<'a, T> = std::result::Result<T, InterpException>;
 pub enum InterpException {
     InvalidUnary(Unary),
     InvalidBinary(Binary),
+    DivideByZero(Binary),
+    InvalidTernaryExpr(u64),
+    IdentifierNoExist(String),
     PlaceHolder,
 }
 
@@ -25,8 +28,11 @@ impl Unwindable for InterpException {
     fn get_value(&self) -> String {
         match self {
             InterpException::InvalidUnary(tok) => format!("Invalid unary expr on line {}", tok.operator.line),
-            InterpException::InvalidBinary(_) => todo!(),
+            InterpException::InvalidTernaryExpr(line) => format!("Used string in ternary expr on line {}", line),
+            InterpException::InvalidBinary(binary) => format!("Invalid Expression on line {}", binary.operator.line), 
             InterpException::PlaceHolder => String::from("Limitation of rust borrow checker"),
+            InterpException::IdentifierNoExist(ident) => format!("Identifier '{}' does not exist", ident),
+            InterpException::DivideByZero(_) => todo!(),
         }
     }
 }

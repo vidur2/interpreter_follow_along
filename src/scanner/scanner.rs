@@ -3,7 +3,7 @@ use crate::{
         error_reporter::{ErrorReport, Literal, Unwindable},
         scanning_err::ScanningException,
     },
-    parser::parser::Parser,
+    parser::parser::Parser, interpreter::interpreter::Interpreter, ast::ast_traits::Interperable,
 };
 
 use super::token::{Primitive, Token, TokenType};
@@ -74,6 +74,7 @@ impl Scanner {
     // Shell mode
     pub fn accept_input() {
         let mut lexer = Self::start_scanner();
+        let interpreter = Interpreter::new();
 
         loop {
             print!("-> ");
@@ -86,7 +87,7 @@ impl Scanner {
                     lexer.token.pop();
                     lexer.read_as_buff(line);
                     lexer.tokenize_buff();
-                    // println!("{:?}", lexer.token);
+                    println!("{:?}", lexer.token);
                     lexer.token.push(Token {
                         tok: TokenType::EOF,
                         lexeme: String::new(),
@@ -98,7 +99,10 @@ impl Scanner {
 
                     while !parser.is_at_end() {
                         let expr = parser.parse();
-                        if let Err(err) = expr {
+                        if let Ok(expr_uw) = expr {
+                            interpreter.interpret(&expr_uw);
+                        }
+                        else if let Err(err) = expr {
                             parser.current += 1;
                         }
                     }
@@ -183,6 +187,7 @@ impl Scanner {
                 return None;
             } else if curr_char == '\n' || curr_char == ';' {
                 self.advance_by(1);
+                self.add_token(TokenType::NEWLINE, None);
                 self.curr_line += 1;
                 self.has_error = true;
                 return Some(ScanningException::UnterminatedString);
@@ -201,7 +206,7 @@ impl Scanner {
         loop {
             let curr_char = buff[self.curr_char] as char;
             if curr_char == '.' && !has_decimal {
-                let next_char = buff[self.curr_char] as char;
+                let next_char = buff[self.curr_char + 1] as char;
                 if next_char >= '0' && next_char <= '9' {
                     has_decimal = true;
                     digit_count = 1;
@@ -237,8 +242,11 @@ impl Scanner {
         }
 
         let substr = self.buff.get(self.start..self.curr_char).unwrap();
-
         let tok_type = TokenType::match_keyword(substr);
+        
+        if TokenType::IDENTIFIER != tok_type {
+            self.curr_char -= 1;
+        }
 
         self.add_token(tok_type, None);
     }

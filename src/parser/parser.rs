@@ -1,7 +1,7 @@
 use crate::{
-    ast::ast_types::{Binary, ExprPossibilities, Literal, Ternary, Unary, Grouping},
+    ast::expr_types::{Binary, ExprPossibilities, Literal, Ternary, Unary, Grouping, Stmt, EnvParsable},
     error_reporting::{error_reporter::Unwindable, parsing_err::ParsingException},
-    scanner::token::{Token, TokenType},
+    scanner::token::{Token, TokenType, Primitive},
 };
 
 #[derive(Clone)]
@@ -16,9 +16,8 @@ impl Parser {
     }
 
     pub fn parse(&mut self) -> Result<ExprPossibilities, ParsingException> {
-        let expr_wrapped = self.ternary();
+        let expr_wrapped = self.env_dec();
         if let Ok(expr) = expr_wrapped {
-            println!("{:?}", expr);
             return Ok(expr);
         } else if let Err(err) = expr_wrapped {
             println!("{}", err.get_value());
@@ -27,6 +26,84 @@ impl Parser {
             return Err(ParsingException::PlaceHolder);
         }
     }
+
+    fn env_dec(&mut self) -> Result<ExprPossibilities, ParsingException> {
+        if self.match_tok(&[TokenType::CLOS]) {return self.env_declaration();};
+
+        return self.declaration();
+    }
+
+    fn env_declaration(&mut self) -> Result<ExprPossibilities, ParsingException> {
+        let name = self.consume(&[TokenType::IDENTIFIER], ParsingException::PlaceHolder);
+
+        if let Err(err) = name  {
+            return Err(err)
+        }
+
+        unsafe {
+            let ident = name.unwrap_unchecked().clone();
+            if self.match_tok(&[TokenType::EQUAL]) && self.match_tok(&[TokenType::LEFT_BRACE]) {
+                let mut env: EnvParsable = EnvParsable { stmt: TokenType::CLOS, ident: ident.clone(), inner: Vec::new() };
+
+                while self.peek().tok == TokenType::LET {
+                    let var = self.var_declaration(TokenType::LET)?;
+
+                    if let ExprPossibilities::Stmt(stmt) = var && let Some(ref _expr) = stmt.inner {
+                        env.inner.push(stmt);
+                    } else {
+                        return Err(ParsingException::InvalidEnv(env))
+                    }
+
+                }
+
+                return Ok(ExprPossibilities::Env(env));
+            }
+            return Err(ParsingException::InvalidEnvAssign(ident))
+        }
+    }
+
+    fn declaration(&mut self) -> Result<ExprPossibilities, ParsingException> {
+        if self.match_tok(&[TokenType::LET]) {return self.var_declaration(TokenType::LET)};
+
+        return self.statement();
+    }
+
+    fn var_declaration(&mut self, stmt_type: TokenType) -> Result<ExprPossibilities, ParsingException> {
+        let name = self.consume(&[TokenType::IDENTIFIER], ParsingException::PlaceHolder);
+        if let Err(err) = name {
+            return Err(err);
+        }
+        unsafe {
+            let ident = name.unwrap_unchecked().clone();
+            if self.match_tok(&[TokenType::EQUAL]) {
+                let initializer = ExprPossibilities::Stmt(Stmt { stmt: stmt_type, inner: Some(Box::new(self.ternary()?)), ident: Some(ident)  });
+                self.consume(&[TokenType::NEWLINE, TokenType::SEMICOLON], ParsingException::InvalidIdentifier(self.previous().clone()))?;
+                return Ok(initializer);
+            }
+        }
+        return Err(ParsingException::InvalidAssign(self.previous().clone()))
+    }
+
+    fn statement(&mut self) -> Result<ExprPossibilities, ParsingException> {
+        if self.match_tok(&[TokenType::PRINT, TokenType::PRINTLN]) {
+            if self.previous().tok == TokenType::PRINT {
+                return self.print(TokenType::PRINT);
+            } else {
+                return self.print(TokenType::PRINTLN);
+            }
+        } 
+
+        return self.ternary();
+    }
+
+    fn print(&mut self, tok: TokenType) -> Result<ExprPossibilities, ParsingException> {
+        let expr = self.ternary()?;
+        if let ExprPossibilities::Grouping(expr) = expr {
+            return Ok(ExprPossibilities::Stmt(Stmt { stmt: tok, inner: Some(Box::new(ExprPossibilities::Grouping(expr))), ident: None }));
+        } else {
+            return Err(ParsingException::InvalidPrint(self.previous().clone()));
+        }
+    } 
 
     fn ternary(&mut self) -> Result<ExprPossibilities, ParsingException> {
         let expr = self.expression()?;
@@ -182,9 +259,13 @@ impl Parser {
             }));
         }
 
+        if self.match_tok(&[TokenType::IDENTIFIER]) {
+            return Ok(ExprPossibilities::Stmt(Stmt { stmt: TokenType::IDENTIFIER, ident: Some(self.previous().clone()), inner: None }))
+        }
+
         if self.match_tok(&[TokenType::LEFT_PAREN]) {
             if let Ok(expr) = self.expression() {
-                self.consume(TokenType::RIGHT_PAREN)?;
+                self.consume(&[TokenType::RIGHT_PAREN], ParsingException::UnterminatedParenthesis(self.previous().clone()))?;
                 return Ok(ExprPossibilities::Grouping(Grouping {
                     expr: Box::new(expr),
                 }));
@@ -207,6 +288,7 @@ impl Parser {
                 }
             }
         }
+
         return false;
     }
 
@@ -237,14 +319,13 @@ impl Parser {
         return &self.tokens[self.current];
     }
 
-    fn consume(&mut self, tok_type: TokenType) -> Result<&Token, ParsingException> {
-        if self.check(&tok_type) {
-            return Ok(&self.advance());
-        };
-
-        return Err(ParsingException::UnterminatedParenthesis(
-            self.previous().clone(),
-        ));
+    fn consume(&mut self, tok_type: &[TokenType], exception: ParsingException) -> Result<&Token, ParsingException> {
+        for indiv_tok in tok_type.iter() {
+            if self.check(indiv_tok) {
+                return Ok(&self.advance());
+            };
+        }
+        return Err(exception);
     }
 
     fn synchronize(&mut self) {

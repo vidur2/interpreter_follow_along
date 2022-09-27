@@ -1,4 +1,4 @@
-use std::{convert::TryInto, fmt::Display};
+use std::{convert::TryInto, fmt::Display, ops::Add};
 
 use crate::error_reporting::{error_reporter::Literal, scanning_err::ScanningException};
 
@@ -22,6 +22,7 @@ pub enum TokenType {
     MODULO,
     TERNARYTRUE,
     TERNARYFALSE,
+    NEWLINE,
 
     // One or two character tokens.
     BANG,
@@ -49,6 +50,7 @@ pub enum TokenType {
     NIL,
     OR,
     PRINT,
+    PRINTLN,
     RETURN,
     SELF,
     TRUE,
@@ -147,9 +149,10 @@ impl TokenType {
             "true" => TokenType::TRUE,
             "let" => TokenType::LET,
             "while" => TokenType::WHILE,
-            "varclos" => TokenType::CLOS,
+            "env" => TokenType::CLOS,
             "switch" => TokenType::SWITCH,
             "func" => TokenType::FUNC,
+            "println" => TokenType::PRINTLN,
             _ => TokenType::IDENTIFIER,
         }
     }
@@ -163,7 +166,7 @@ impl TokenType {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Primitive {
     Float(f32),
     Int(isize),

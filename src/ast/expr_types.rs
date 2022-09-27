@@ -1,15 +1,17 @@
-use std::pin::Pin;
 
-use crate::{scanner::token::{Primitive, Token}, error_reporting::interp_err::InterpException};
+
+use std::collections::HashMap;
+
+use crate::{scanner::token::{Primitive, Token, TokenType}, error_reporting::interp_err::InterpException};
 
 use super::ast_traits::Accept;
 
-#[derive(Clone, Debug)]
-pub struct Expr {
-    pub left: Box<Pin<Option<Expr>>>,
-    pub right: Box<Pin<Option<Expr>>>,
-    pub operator: Token,
-}
+// #[derive(Clone, Debug)]
+// pub struct Expr {
+//     pub left: Box<Pin<Option<Expr>>>,
+//     pub right: Box<Pin<Option<Expr>>>,
+//     pub operator: Token,
+// }
 
 #[derive(Clone, Debug)]
 pub struct Ternary {
@@ -43,12 +45,27 @@ pub struct Unary {
 
 #[derive(Clone, Debug)]
 pub enum ExprPossibilities {
-    Expr(Expr),
     Binary(Binary),
     Grouping(Grouping),
     Literal(Literal),
     Ternary(Ternary),
+    Stmt(Stmt),
     Unary(Unary),
+    Env(EnvParsable),
+}
+
+#[derive(Clone, Debug)]
+pub struct Stmt {
+    pub stmt: TokenType,
+    pub ident: Option<Token>,
+    pub inner: Option<Box<ExprPossibilities>>
+}
+
+#[derive(Clone, Debug)]
+pub struct EnvParsable {
+    pub stmt: TokenType,
+    pub ident: Token,
+    pub inner: Vec<Stmt>
 }
 
 impl Accept<Option<String>> for ExprPossibilities {}
