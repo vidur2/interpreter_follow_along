@@ -16,7 +16,7 @@ impl Parser {
     }
 
     pub fn parse(&mut self) -> Result<ExprPossibilities, ParsingException> {
-        let expr_wrapped = self.call_env();
+        let expr_wrapped = self.loops();
         if let Ok(expr) = expr_wrapped {
             // println!("{:?}", expr);
             return Ok(expr);
@@ -26,6 +26,27 @@ impl Parser {
         } else {
             return Err(ParsingException::PlaceHolder);
         }
+    }
+
+    fn loops(&mut self) -> Result<ExprPossibilities, ParsingException>{
+        if self.match_tok(&[TokenType::WHILE, TokenType::FOR]) {
+            let tok_type = self.previous().tok.clone();
+            let expr = self.chain_bool()?;
+            self.consume(&[TokenType::LEFT_BRACE], ParsingException::InvalidLoop(self.previous().clone()))?;
+            return self.scope(tok_type, None, Some(Box::new(expr)));
+        }
+
+        return self.call_env();
+    }
+
+    fn call_env(&mut self) -> Result<ExprPossibilities, ParsingException>{
+        if self.match_tok(&[TokenType::CLOSCALL]) {
+            let ident = self.consume(&[TokenType::IDENTIFIER], ParsingException::InvalidEnvCall(self.previous().clone()))?.clone();
+            self.consume(&[TokenType::LEFT_BRACE], ParsingException::InvalidEnvCall(self.previous().clone()))?.clone();
+            return self.scope(TokenType::CLOSCALL, Some(ident), None);
+        }
+
+        return self.env_dec();
     }
 
     fn env_dec(&mut self) -> Result<ExprPossibilities, ParsingException> {
@@ -46,7 +67,7 @@ impl Parser {
         unsafe {
             let ident = name.unwrap_unchecked().clone();
             if self.match_tok(&[TokenType::EQUAL]) && self.match_tok(&[TokenType::LEFT_BRACE]) {
-                let mut env: Scope = Scope { stmt: TokenType::CLOS, ident: Some(ident.clone()), inner: Vec::new() };
+                let mut env: Scope = Scope { stmt: TokenType::CLOS, ident: Some(ident.clone()), inner: Vec::new(), condition: None };
 
                 while !self.match_tok(&[TokenType::RIGHT_BRACE]) {
                     if self.match_tok(&[TokenType::LET]) {
@@ -67,24 +88,14 @@ impl Parser {
         }
     }
 
-    fn call_env(&mut self) -> Result<ExprPossibilities, ParsingException>{
-        if self.match_tok(&[TokenType::CLOSCALL]) {
-            let ident = self.consume(&[TokenType::IDENTIFIER], ParsingException::InvalidEnvCall(self.previous().clone()))?.clone();
-            self.consume(&[TokenType::LEFT_BRACE], ParsingException::InvalidEnvCall(self.previous().clone()))?.clone();
-            return self.scope(TokenType::CLOSCALL, Some(ident));
-        }
-
-        return self.env_dec();
-    }
-
-    fn scope(&mut self, scope_type: TokenType, ident: Option<Token>) -> Result<ExprPossibilities, ParsingException> {
+    fn scope(&mut self, scope_type: TokenType, ident: Option<Token>, condition: Option<Box<ExprPossibilities>>) -> Result<ExprPossibilities, ParsingException> {
         let mut expr_list: Vec<ExprPossibilities> = Vec::new();
         while !self.match_tok(&[TokenType::RIGHT_BRACE]) {
-            let expr = self.call_env()?;
+            let expr = self.loops()?;
             expr_list.push(expr)
         }
 
-        return Ok(ExprPossibilities::Scope(Scope { stmt: scope_type, ident, inner: expr_list }));
+        return Ok(ExprPossibilities::Scope(Scope { stmt: scope_type, ident, inner: expr_list, condition }));
 
     }
 
@@ -135,14 +146,14 @@ impl Parser {
     } 
 
     fn ternary(&mut self) -> Result<ExprPossibilities, ParsingException> {
-        let expr = self.expression()?;
+        let expr = self.chain_bool()?;
         if self.match_tok(&[TokenType::TERNARYTRUE]) {
             self.consume(&[TokenType::LEFT_BRACE], ParsingException::InvalidTernaryExpr(self.previous().clone()))?;
-            let true_case = self.scope(TokenType::IF, None)?;
+            let true_case = self.scope(TokenType::IF, None, None)?;
 
             if self.match_tok(&[TokenType::TERNARYFALSE]) {
                 self.consume(&[TokenType::LEFT_BRACE], ParsingException::InvalidTernaryExpr(self.previous().clone()))?;
-                let false_case = self.scope(TokenType::IF, None)?;
+                let false_case = self.scope(TokenType::IF, None, None)?;
                 self.consume(&[TokenType::SEMICOLON], ParsingException::PlaceHolder);
                 return Ok(ExprPossibilities::Ternary(Ternary {
                     condition: Box::new(expr),
@@ -159,11 +170,11 @@ impl Parser {
             }
         } else if self.match_tok(&[TokenType::TERNARYFALSE]) {
             self.consume(&[TokenType::LEFT_BRACE], ParsingException::InvalidTernaryExpr(self.previous().clone()))?;
-            let false_case = self.scope(TokenType::IF, None)?;
+            let false_case = self.scope(TokenType::IF, None, None)?;
 
             if self.match_tok(&[TokenType::TERNARYTRUE]) {
                 self.consume(&[TokenType::LEFT_BRACE], ParsingException::InvalidTernaryExpr(self.previous().clone()))?;
-                let true_case = self.scope(TokenType::IF, None)?;
+                let true_case = self.scope(TokenType::IF, None, None)?;
                 self.consume(&[TokenType::SEMICOLON], ParsingException::PlaceHolder);
                 return Ok(ExprPossibilities::Ternary(Ternary {
                     condition: Box::new(expr),
@@ -182,6 +193,22 @@ impl Parser {
             // self.consume(&[TokenType::LEFT_BRACE], ParsingException::PlaceHolder);
             return Ok(expr);
         }
+    }
+
+    fn chain_bool(&mut self) -> Result<ExprPossibilities, ParsingException> {
+        let mut expr = self.expression()?;
+
+        while self.match_tok(&[TokenType::AND, TokenType::OR]) {
+            let operator = self.previous().clone();
+            let right = self.expression()?;
+            expr = ExprPossibilities::Binary(Binary {
+                left: Box::new(expr),
+                right: Box::new(right),
+                operator,
+            })
+        }
+        
+        return Ok(expr);
     }
 
     fn expression(&mut self) -> Result<ExprPossibilities, ParsingException> {

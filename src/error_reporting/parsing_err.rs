@@ -15,6 +15,7 @@ pub enum ParsingException {
     InvalidEnv(Scope),
     InvalidEnvAssign(Token),
     InvalidEnvCall(Token),
+    InvalidLoop(Token),
     PlaceHolder,
 }
 
@@ -38,7 +39,8 @@ impl Unwindable for ParsingException {
             Self::InvalidIdentifier(tok) => format!("Parsing Error: Invalid variable expr on line {}", tok.line),
             Self::InvalidEnv(env) => format!("Parsing Error: non-variable declaration in environment '{}' on line {}", env.ident.clone().unwrap().lexeme, env.ident.clone().unwrap().line),
             Self::InvalidEnvAssign(tok) => format!("Invalid environment assignment of '{}' on line {}", tok.lexeme, tok.line),
-            Self::InvalidEnvCall(tok) => format!("Invalid environment call on line {}", tok.line)
+            Self::InvalidEnvCall(tok) => format!("Invalid environment call on line {}", tok.line),
+            ParsingException::InvalidLoop(tok) => format!("Invalid {:?} loop on line {}", tok.tok, tok.line),
         }
     }
 }

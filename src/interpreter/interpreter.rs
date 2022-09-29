@@ -2,7 +2,7 @@ use std::{rc::Rc, collections::HashMap};
 
 use crate::{ast::{ast_traits::{Interperable, Accept}, expr_types::{ExprPossibilities}}, scanner::token::{Primitive, TokenType}, error_reporting::{interp_err::InterpException, parsing_err::ParsingException, error_reporter::Unwindable}};
 
-use super::environment::{Environment, EnvironmentOption};
+use super::environment::Environment;
 
 pub struct Interpreter {
     pub globals: Environment,
@@ -51,6 +51,20 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                 let left = self.evaluate(&bin.left)?;
                 let right = self.evaluate(&bin.right)?;
                 match bin.operator.tok {
+                    TokenType::AND => {
+                        if let Primitive::Bool(bool1) = left && let Primitive::Bool(bool2) = right {
+                            return Ok(Primitive::Bool(bool1 && bool2));
+                        } else {
+                            return Err(InterpException::PlaceHolder);
+                        }
+                    },
+                    TokenType::OR => {
+                        if let Primitive::Bool(bool1) = left && let Primitive::Bool(bool2) = right {
+                            return Ok(Primitive::Bool(bool1 || bool2));
+                        } else {
+                            return Err(InterpException::PlaceHolder);
+                        }
+                    }
                     TokenType::SLASH => {
                         if Primitive::Int(0) != right && let Primitive::Int(divisor) = left && let Primitive::Int(dividend) = right {
                             return Ok(Primitive::Int(divisor / dividend));
@@ -70,7 +84,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                 Primitive::Int(num2) => return Ok(Primitive::Int(num1 * num2)),
                                 Primitive::String(_strng) => return Err(InterpException::InvalidBinary(bin)),
                                 Primitive::Bool(boolean) => return Ok(Primitive::Int(num1 * Interpreter::convert_bool(boolean))),
-                                Primitive::None => return Err(InterpException::InvalidBinary(bin)),
+                                _ => return Err(InterpException::InvalidBinary(bin)),
                             }
                         } else if let Primitive::Float(num1) = left && let Primitive::Float(num2) = right {
                             match right {
@@ -78,7 +92,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                 Primitive::Int(num2) => return Ok(Primitive::Float(num1 * num2 as f32)),
                                 Primitive::String(_strng) => return Err(InterpException::InvalidBinary(bin)),
                                 Primitive::Bool(boolean) => return Ok(Primitive::Float(num1 * Interpreter::convert_bool(boolean) as f32)),
-                                Primitive::None => return Err(InterpException::InvalidBinary(bin)),
+                                _ => return Err(InterpException::InvalidBinary(bin)),
                             }
                         } else {
                             return Err(InterpException::InvalidBinary(bin))
@@ -100,7 +114,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                 Primitive::Int(num2) => return Ok(Primitive::Int(num1 + num2)),
                                 Primitive::String(strng) => return Ok(Primitive::String(num1.to_string() + &strng)),
                                 Primitive::Bool(boolean) => return Ok(Primitive::Int(num1 + Interpreter::convert_bool(boolean))),
-                                Primitive::None => return Err(InterpException::InvalidBinary(bin)),
+                                _ => return Err(InterpException::InvalidBinary(bin)),
                             }
                         } else if let Primitive::Float(num1) = left {
                             match right {
@@ -108,7 +122,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                 Primitive::Int(num2) => return Ok(Primitive::Float(num1 + num2 as f32)),
                                 Primitive::String(strng) => return Ok(Primitive::String(num1.to_string() + &strng)),
                                 Primitive::Bool(boolean) => return Ok(Primitive::Float(num1 + Interpreter::convert_bool(boolean) as f32)),
-                                Primitive::None => return Err(InterpException::InvalidBinary(bin)),
+                                _ => return Err(InterpException::InvalidBinary(bin)),
                             }
                         } else if let Primitive::String(str1) = left {
                             match right {
@@ -116,7 +130,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                 Primitive::Int(int) => return Ok(Primitive::String(str1 + &int.to_string())),
                                 Primitive::String(str2) => return Ok(Primitive::String(str1 + str2.as_str())),
                                 Primitive::Bool(boolean) => return Ok(Primitive::String(str1 + &boolean.to_string())),
-                                Primitive::None => return Err(InterpException::InvalidBinary(bin)),
+                                _ => return Err(InterpException::InvalidBinary(bin)),
                             }
                         } else {
                             return Err(InterpException::InvalidBinary(bin))
@@ -158,6 +172,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                     Primitive::String(string) => string.len() != 0,
                     Primitive::Bool(bool_val) => bool_val,
                     Primitive::None => false,
+                    _ => return Err(InterpException::PlaceHolder)
                 };
                 
                 if bool_val && let Some(expr) = ternary.true_cond {
@@ -178,6 +193,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                 Primitive::Int(int) => print!("{}", int),
                                 Primitive::String(strng) => print!("{}", strng),
                                 Primitive::Bool(boolean) => print!("{}", boolean),
+                                Primitive::Env(env) => print!("{:?}", env),
                                 Primitive::None => print!("null"),
                             }
 
@@ -192,6 +208,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                     Primitive::Int(int) => println!("{}", int),
                                     Primitive::String(strng) => println!("{}", strng),
                                     Primitive::Bool(boolean) => println!("{}", boolean),
+                                    Primitive::Env(env) => println!("{:?}", env),
                                     Primitive::None => println!("null"),
                                 }
                         }
@@ -207,19 +224,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                     },
                     TokenType::IDENTIFIER => {
                         unsafe {
-                            let value = self.globals.retrieve(&stmt.ident.unwrap_unchecked().lexeme)?;
-
-                            match value {
-                                EnvironmentOption::Primitive(val) => return Ok(val),
-                                EnvironmentOption::Environment(env) => {
-                                    todo!();
-                                    // let mut new_interp = Interpreter::new();
-                                    // new_interp.globals = env;
-                                    // new_interp.globals.vars.extend(self.globals.vars.clone());
-                                    // new_interp.interpret(todo!());
-                                    // todo!();
-                                }
-                            }
+                            return self.globals.retrieve(&stmt.ident.unwrap_unchecked().lexeme);
                         }
                     }
                     _ => return Err(InterpException::PlaceHolder)
@@ -236,6 +241,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                             Primitive::String(_string) => return Err(InterpException::InvalidUnary(unary)),
                             Primitive::Bool(boolean) => return Ok(Primitive::Bool(!boolean)),
                             Primitive::None => return Ok(Primitive::Bool(true)),
+                            _ => return Err(InterpException::InvalidUnary(unary))
                         }
                     }
                     _  => {
@@ -249,12 +255,12 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                     TokenType::CLOS => {
                         unsafe {
                             let clos_ident = scope.ident.unwrap_unchecked().lexeme;
-                            let mut clos_data: HashMap<String, EnvironmentOption> = HashMap::new();
+                            let mut clos_data: HashMap<String, Primitive> = HashMap::new();
                             for var in scope.inner {
                                 if let ExprPossibilities::Stmt(var) = var {
                                     let var_ident = var.ident.unwrap_unchecked().lexeme;
                                     let val = self.evaluate(&var.inner.unwrap_unchecked())?;
-                                    clos_data.insert(var_ident, EnvironmentOption::Primitive(val));
+                                    clos_data.insert(var_ident, val);
                                 }
                             }
                             self.globals.define_env(&clos_ident, clos_data);
@@ -267,10 +273,8 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                             // println!("{:?}", scope);
                             let clos_ident = scope.ident.unwrap_unchecked().lexeme;
                             let data = self.globals.retrieve(&clos_ident)?;
-                            match data {
-                                EnvironmentOption::Primitive(_prim) => return Err(InterpException::PlaceHolder),
-                                EnvironmentOption::Environment(env) => {
-                                    let mut env = env;
+                            if let Primitive::Env(env) = data {
+                                let mut env = env;
                                     env.enclosing = Some(Box::new(self.globals.clone()));
                                     self.globals = env.clone();
                                     for line in scope.inner.iter() {
@@ -278,14 +282,13 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                     }
                                     self.globals = *env.enclosing.unwrap_unchecked();
                                     return Ok(Primitive::None);
-                                },
+                            } else {
+                                return Err(InterpException::PlaceHolder);
                             }
                         }
                     },
                     TokenType::IF => {
-                        let mut env: Environment = Environment::new();
-                        env.enclosing = Some(Box::new(self.globals.clone()));
-                        self.globals = env.clone();
+                        let env = self.enclose();
                         for line in scope.inner.iter() {
                             self.evaluate(&line)?;
                         }
@@ -294,12 +297,33 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                             self.globals = *env.enclosing.unwrap_unchecked();
                             return Ok(Primitive::None);
                         }
-                        
+                    }
+
+                    TokenType::WHILE => {
+                        let env = self.enclose();
+                        unsafe {
+                            while let Primitive::Bool(true) = self.evaluate(&scope.clone().condition.unwrap_unchecked())? {
+                                for line in scope.inner.iter() {
+                                    self.evaluate(line)?;
+                                }
+                            }
+                            self.globals = *env.enclosing.unwrap_unchecked();
+                        }
+                        return Ok(Primitive::None);
                     }
                     _ => return Err(InterpException::PlaceHolder)
                 }
                 
             }
         }
+    }
+}
+
+impl Interpreter {
+    fn enclose(&mut self) -> Environment {
+        let mut env: Environment = Environment::new();
+        env.enclosing = Some(Box::new(self.globals.clone()));
+        self.globals = env.clone();
+        return env
     }
 }

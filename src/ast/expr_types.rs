@@ -1,17 +1,8 @@
 
 
-use std::collections::HashMap;
-
-use crate::{scanner::token::{Primitive, Token, TokenType}, error_reporting::interp_err::InterpException};
+use crate::scanner::token::{Primitive, Token, TokenType};
 
 use super::ast_traits::Accept;
-
-// #[derive(Clone, Debug)]
-// pub struct Expr {
-//     pub left: Box<Pin<Option<Expr>>>,
-//     pub right: Box<Pin<Option<Expr>>>,
-//     pub operator: Token,
-// }
 
 #[derive(Clone, Debug)]
 pub struct Ternary {
@@ -65,6 +56,7 @@ pub struct Stmt {
 pub struct Scope {
     pub stmt: TokenType,
     pub ident: Option<Token>,
+    pub condition: Option<Box<ExprPossibilities>>,
     pub inner: Vec<ExprPossibilities>
 }
 

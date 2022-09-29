@@ -1,6 +1,6 @@
 use std::{convert::TryInto, fmt::Display, ops::Add};
 
-use crate::error_reporting::{error_reporter::Literal, scanning_err::ScanningException};
+use crate::{error_reporting::{error_reporter::Literal, scanning_err::ScanningException}, interpreter::environment::Environment};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(u8)]
@@ -174,6 +174,7 @@ pub enum Primitive {
     Int(isize),
     String(String),
     Bool(bool),
+    Env(Environment),
     None,
 }
 
@@ -184,6 +185,7 @@ impl Primitive {
             Primitive::Int(int) => Some(int.to_string()),
             Primitive::String(strng) => Some(strng.to_string()),
             Primitive::Bool(boolean) => Some(boolean.to_string()),
+            Primitive::Env(env) => Some(format!("{:?}", env)),
             Primitive::None => None,
         }
     }
