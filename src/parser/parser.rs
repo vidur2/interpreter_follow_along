@@ -1,7 +1,7 @@
 use crate::{
-    ast::expr_types::{Binary, ExprPossibilities, Literal, Ternary, Unary, Grouping, Stmt, EnvParsable},
+    ast::expr_types::{Binary, ExprPossibilities, Literal, Ternary, Unary, Grouping, Stmt, Scope},
     error_reporting::{error_reporter::Unwindable, parsing_err::ParsingException},
-    scanner::token::{Token, TokenType, Primitive},
+    scanner::token::{ Token, TokenType },
 };
 
 #[derive(Clone)]
@@ -16,8 +16,9 @@ impl Parser {
     }
 
     pub fn parse(&mut self) -> Result<ExprPossibilities, ParsingException> {
-        let expr_wrapped = self.env_dec();
+        let expr_wrapped = self.call_env();
         if let Ok(expr) = expr_wrapped {
+            // println!("{:?}", expr);
             return Ok(expr);
         } else if let Err(err) = expr_wrapped {
             println!("{}", err.get_value());
@@ -28,14 +29,16 @@ impl Parser {
     }
 
     fn env_dec(&mut self) -> Result<ExprPossibilities, ParsingException> {
-        if self.match_tok(&[TokenType::CLOS]) {return self.env_declaration();};
+        if self.match_tok(&[TokenType::CLOS]) {
+            return self.env_declaration();
+        };
 
         return self.declaration();
     }
 
     fn env_declaration(&mut self) -> Result<ExprPossibilities, ParsingException> {
         let name = self.consume(&[TokenType::IDENTIFIER], ParsingException::PlaceHolder);
-
+    
         if let Err(err) = name  {
             return Err(err)
         }
@@ -43,27 +46,52 @@ impl Parser {
         unsafe {
             let ident = name.unwrap_unchecked().clone();
             if self.match_tok(&[TokenType::EQUAL]) && self.match_tok(&[TokenType::LEFT_BRACE]) {
-                let mut env: EnvParsable = EnvParsable { stmt: TokenType::CLOS, ident: ident.clone(), inner: Vec::new() };
+                let mut env: Scope = Scope { stmt: TokenType::CLOS, ident: Some(ident.clone()), inner: Vec::new() };
 
-                while self.peek().tok == TokenType::LET {
-                    let var = self.var_declaration(TokenType::LET)?;
-
-                    if let ExprPossibilities::Stmt(stmt) = var && let Some(ref _expr) = stmt.inner {
-                        env.inner.push(stmt);
+                while !self.match_tok(&[TokenType::RIGHT_BRACE]) {
+                    if self.match_tok(&[TokenType::LET]) {
+                        let var = self.var_declaration(TokenType::LET)?;
+                        if let ExprPossibilities::Stmt(stmt) = var && let Some(ref _expr) = stmt.inner {
+                            env.inner.push(ExprPossibilities::Stmt(stmt));
+                        } else {
+                            return Err(ParsingException::InvalidEnv(env))
+                        }
                     } else {
-                        return Err(ParsingException::InvalidEnv(env))
+                        return Err(ParsingException::InvalidEnvAssign(ident))
                     }
-
                 }
-
-                return Ok(ExprPossibilities::Env(env));
+                self.consume(&[TokenType::SEMICOLON], ParsingException::PlaceHolder);
+                return Ok(ExprPossibilities::Scope(env));
             }
             return Err(ParsingException::InvalidEnvAssign(ident))
         }
     }
 
+    fn call_env(&mut self) -> Result<ExprPossibilities, ParsingException>{
+        if self.match_tok(&[TokenType::CLOSCALL]) {
+            let ident = self.consume(&[TokenType::IDENTIFIER], ParsingException::InvalidEnvCall(self.previous().clone()))?.clone();
+            self.consume(&[TokenType::LEFT_BRACE], ParsingException::InvalidEnvCall(self.previous().clone()))?.clone();
+            return self.scope(TokenType::CLOSCALL, Some(ident));
+        }
+
+        return self.env_dec();
+    }
+
+    fn scope(&mut self, scope_type: TokenType, ident: Option<Token>) -> Result<ExprPossibilities, ParsingException> {
+        let mut expr_list: Vec<ExprPossibilities> = Vec::new();
+        while !self.match_tok(&[TokenType::RIGHT_BRACE]) {
+            let expr = self.declaration()?;
+            expr_list.push(expr)
+        }
+
+        return Ok(ExprPossibilities::Scope(Scope { stmt: scope_type, ident, inner: expr_list }));
+
+    }
+
     fn declaration(&mut self) -> Result<ExprPossibilities, ParsingException> {
-        if self.match_tok(&[TokenType::LET]) {return self.var_declaration(TokenType::LET)};
+        if self.match_tok(&[TokenType::LET]) {
+            return self.var_declaration(TokenType::LET)
+        };
 
         return self.statement();
     }
@@ -99,6 +127,7 @@ impl Parser {
     fn print(&mut self, tok: TokenType) -> Result<ExprPossibilities, ParsingException> {
         let expr = self.ternary()?;
         if let ExprPossibilities::Grouping(expr) = expr {
+            self.consume(&[TokenType::SEMICOLON], ParsingException::PlaceHolder);
             return Ok(ExprPossibilities::Stmt(Stmt { stmt: tok, inner: Some(Box::new(ExprPossibilities::Grouping(expr))), ident: None }));
         } else {
             return Err(ParsingException::InvalidPrint(self.previous().clone()));
@@ -272,6 +301,10 @@ impl Parser {
             }
         }
 
+        if self.match_tok(&[TokenType::SEMICOLON]) {
+            return self.primary();
+        }
+
         if self.current > 0 {
             return Err(ParsingException::InvalidExpr(self.previous().clone()));
         } else {
@@ -325,6 +358,7 @@ impl Parser {
                 return Ok(&self.advance());
             };
         }
+
         return Err(exception);
     }
 

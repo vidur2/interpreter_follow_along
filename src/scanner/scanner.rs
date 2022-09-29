@@ -13,7 +13,7 @@ use std::{fmt::Display, io::Write};
 #[derive(Clone)]
 pub struct Scanner {
     buff: String,
-    token: Vec<Token>,
+    pub token: Vec<Token>,
     has_error: bool,
     curr_line: usize,
     start: usize,
@@ -74,7 +74,7 @@ impl Scanner {
     // Shell mode
     pub fn accept_input() {
         let mut lexer = Self::start_scanner();
-        let interpreter = Interpreter::new();
+        let mut interpreter = Interpreter::new();
 
         loop {
             print!("-> ");
@@ -87,7 +87,7 @@ impl Scanner {
                     lexer.token.pop();
                     lexer.read_as_buff(line);
                     lexer.tokenize_buff();
-                    println!("{:?}", lexer.token);
+                    // println!("{:?}", lexer.token);
                     lexer.token.push(Token {
                         tok: TokenType::EOF,
                         lexeme: String::new(),
@@ -243,12 +243,9 @@ impl Scanner {
 
         let substr = self.buff.get(self.start..self.curr_char).unwrap();
         let tok_type = TokenType::match_keyword(substr);
-        
-        if TokenType::IDENTIFIER != tok_type {
-            self.curr_char -= 1;
-        }
 
         self.add_token(tok_type, None);
+        self.curr_char -= 1;
     }
 
     fn advance_line(&mut self) {

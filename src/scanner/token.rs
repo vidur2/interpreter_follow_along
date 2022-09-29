@@ -57,6 +57,7 @@ pub enum TokenType {
     LET,
     WHILE,
     CLOS,
+    CLOSCALL,
     SWITCH,
     FUNC,
 
@@ -149,7 +150,8 @@ impl TokenType {
             "true" => TokenType::TRUE,
             "let" => TokenType::LET,
             "while" => TokenType::WHILE,
-            "env" => TokenType::CLOS,
+            "decenv" => TokenType::CLOS,
+            "env" => TokenType::CLOSCALL,
             "switch" => TokenType::SWITCH,
             "func" => TokenType::FUNC,
             "println" => TokenType::PRINTLN,

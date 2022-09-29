@@ -1,4 +1,4 @@
-use crate::{scanner::token::Token, ast::expr_types::EnvParsable};
+use crate::{scanner::token::Token, ast::expr_types::Scope};
 
 use super::error_reporter::Unwindable;
 
@@ -12,8 +12,9 @@ pub enum ParsingException {
     InvalidPrint(Token),
     InvalidAssign(Token),
     InvalidIdentifier(Token),
-    InvalidEnv(EnvParsable),
+    InvalidEnv(Scope),
     InvalidEnvAssign(Token),
+    InvalidEnvCall(Token),
     PlaceHolder,
 }
 
@@ -35,8 +36,9 @@ impl Unwindable for ParsingException {
             ParsingException::InvalidPrint(tok) => format!("Parsing Error: Invalid print statement on line {}", tok.line),
             Self::InvalidAssign(tok) => format!("Parsing Error: missing '=' after ident on line {}", tok.line),
             Self::InvalidIdentifier(tok) => format!("Parsing Error: Invalid variable expr on line {}", tok.line),
-            Self::InvalidEnv(env) => format!("Parsing Error: non-variable declaration in environment '{}' on line {}", env.ident.lexeme, env.ident.line),
-            Self::InvalidEnvAssign(tok) => format!("Invalid environment assignemnt of '{}' on line {}", tok.lexeme, tok.line)
+            Self::InvalidEnv(env) => format!("Parsing Error: non-variable declaration in environment '{}' on line {}", env.ident.clone().unwrap().lexeme, env.ident.clone().unwrap().line),
+            Self::InvalidEnvAssign(tok) => format!("Invalid environment assignment of '{}' on line {}", tok.lexeme, tok.line),
+            Self::InvalidEnvCall(tok) => format!("Invalid environment call on line {}", tok.line)
         }
     }
 }

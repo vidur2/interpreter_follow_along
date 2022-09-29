@@ -51,7 +51,7 @@ pub enum ExprPossibilities {
     Ternary(Ternary),
     Stmt(Stmt),
     Unary(Unary),
-    Env(EnvParsable),
+    Scope(Scope),
 }
 
 #[derive(Clone, Debug)]
@@ -62,12 +62,12 @@ pub struct Stmt {
 }
 
 #[derive(Clone, Debug)]
-pub struct EnvParsable {
+pub struct Scope {
     pub stmt: TokenType,
-    pub ident: Token,
-    pub inner: Vec<Stmt>
+    pub ident: Option<Token>,
+    pub inner: Vec<ExprPossibilities>
 }
 
-impl Accept<Option<String>> for ExprPossibilities {}
+// impl Accept<Option<String>> for ExprPossibilities {}
 
-impl Accept<Result<Primitive, InterpException>> for ExprPossibilities {}
+impl Accept for ExprPossibilities {}

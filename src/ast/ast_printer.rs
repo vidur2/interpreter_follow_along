@@ -8,7 +8,7 @@ use super::{
 pub struct AstPrinter;
 
 impl AstPrinter {
-    fn parenthesize(&self, name: &str, expr: &[Option<Box<ExprPossibilities>>]) -> String {
+    fn parenthesize(&mut self, name: &str, expr: &[Option<Box<ExprPossibilities>>]) -> String {
         let mut ret_str = String::new();
         ret_str.push_str(&("(".to_string() + name));
         for exp in expr.iter() {
@@ -26,7 +26,7 @@ impl AstPrinter {
 }
 
 impl Interperable<Option<String>> for &AstPrinter {
-    fn visit_expr(&self, expr: super::expr_types::ExprPossibilities) -> Option<String> {
+    fn visit_expr(&mut self, expr: super::expr_types::ExprPossibilities) -> Option<String> {
         let mut expr_arr: [Option<Box<ExprPossibilities>>; 2] = [None, None];
         match expr {
             ExprPossibilities::Binary(bin_expr) => {

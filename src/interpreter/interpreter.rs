@@ -1,3 +1,5 @@
+use std::{rc::Rc, collections::HashMap};
+
 use crate::{ast::{ast_traits::{Interperable, Accept}, expr_types::{ExprPossibilities}}, scanner::token::{Primitive, TokenType}, error_reporting::{interp_err::InterpException, parsing_err::ParsingException, error_reporter::Unwindable}};
 
 use super::environment::{Environment, EnvironmentOption};
@@ -14,7 +16,7 @@ impl Interpreter {
         }
     }
     
-    pub fn interpret(&self, expr: &ExprPossibilities) {
+    pub fn interpret(&mut self, expr: &ExprPossibilities) {
         let eval = self.evaluate(expr);
         if let Ok(prim) = eval {
             // match prim {
@@ -29,7 +31,7 @@ impl Interpreter {
         }
     } 
 
-    fn evaluate(&self, expr: &ExprPossibilities) -> Result<Primitive, InterpException> {
+    fn evaluate(&mut self, expr: &ExprPossibilities) -> Result<Primitive, InterpException> {
         return ExprPossibilities::accept(expr.clone(), self);
     }
 
@@ -42,8 +44,8 @@ impl Interpreter {
     }
 }
 
-impl Interperable<Result<Primitive, InterpException>> for &Interpreter {
-    fn visit_expr(&self, expr: crate::ast::expr_types::ExprPossibilities) -> Result<Primitive, InterpException> {
+impl Interperable<Result<Primitive, InterpException>> for Interpreter {
+    fn visit_expr(&mut self, expr: crate::ast::expr_types::ExprPossibilities) -> Result<Primitive, InterpException> {
         match expr {
             crate::ast::expr_types::ExprPossibilities::Binary(bin) => {
                 let left = self.evaluate(&bin.left)?;
@@ -190,7 +192,7 @@ impl Interperable<Result<Primitive, InterpException>> for &Interpreter {
                                     Primitive::Int(int) => println!("{}", int),
                                     Primitive::String(strng) => println!("{}", strng),
                                     Primitive::Bool(boolean) => println!("{}", boolean),
-                                    Primitive::None => print!("null"),
+                                    Primitive::None => println!("null"),
                                 }
                         }
 
@@ -199,7 +201,7 @@ impl Interperable<Result<Primitive, InterpException>> for &Interpreter {
                     TokenType::LET => {
                         unsafe {
                             let expr = self.evaluate(&stmt.inner.unwrap_unchecked())?;
-                            self.globals.define(&stmt.ident.unwrap_unchecked().lexeme, EnvironmentOption::Primitive(expr));
+                            self.globals.define(&stmt.ident.unwrap_unchecked().lexeme, expr);
                             return Ok(Primitive::None)
                         }
                     },
@@ -219,7 +221,8 @@ impl Interperable<Result<Primitive, InterpException>> for &Interpreter {
                                 }
                             }
                         }
-                    }
+                    },
+                    
                     _ => return Err(InterpException::PlaceHolder)
                 }
             }
@@ -242,8 +245,47 @@ impl Interperable<Result<Primitive, InterpException>> for &Interpreter {
                 }
             },
 
-            crate::ast::expr_types::ExprPossibilities::Env(env) => {
-                todo!();
+            crate::ast::expr_types::ExprPossibilities::Scope(scope) => {
+                match scope.stmt {
+                    TokenType::CLOS => {
+                        unsafe {
+                            let clos_ident = scope.ident.unwrap_unchecked().lexeme;
+                            let mut clos_data: HashMap<String, EnvironmentOption> = HashMap::new();
+                            for var in scope.inner {
+                                if let ExprPossibilities::Stmt(var) = var {
+                                    let var_ident = var.ident.unwrap_unchecked().lexeme;
+                                    let val = self.evaluate(&var.inner.unwrap_unchecked())?;
+                                    clos_data.insert(var_ident, EnvironmentOption::Primitive(val));
+                                }
+                            }
+                            self.globals.define_env(&clos_ident, clos_data);
+        
+                            return Ok(Primitive::None);
+                        }
+                    },
+                    TokenType::CLOSCALL => {
+                        unsafe {
+                            // println!("{:?}", scope);
+                            let clos_ident = scope.ident.unwrap_unchecked().lexeme;
+                            let data = self.globals.retrieve(&clos_ident)?;
+                            match data {
+                                EnvironmentOption::Primitive(_prim) => return Err(InterpException::PlaceHolder),
+                                EnvironmentOption::Environment(env) => {
+                                    let mut env = env;
+                                    env.enclosing = Some(Box::new(self.globals.clone()));
+                                    self.globals = env.clone();
+                                    for line in scope.inner.iter() {
+                                        self.evaluate(line)?;
+                                    }
+                                    self.globals = *env.enclosing.unwrap_unchecked();
+                                    return Ok(Primitive::None);
+                                },
+                            }
+                        }
+                    }
+                    _ => return Err(InterpException::PlaceHolder)
+                }
+                
             }
         }
     }

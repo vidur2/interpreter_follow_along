@@ -1,11 +1,13 @@
+use crate::{error_reporting::{parsing_err::ParsingException, interp_err::InterpException}, scanner::token::Primitive};
+
 use super::expr_types::ExprPossibilities;
 
-pub trait Accept<R> {
-    fn accept<P: Interperable<R>>(expr: ExprPossibilities, visitor: P) -> R {
+pub trait Accept {
+    fn accept<P: Interperable<Result<Primitive, InterpException>>>(expr: ExprPossibilities, visitor: &mut P) -> Result<Primitive, InterpException> {
         return visitor.visit_expr(expr);
     }
 }
 
 pub trait Interperable<R> {
-    fn visit_expr(&self, expr: ExprPossibilities) -> R;
+    fn visit_expr(&mut self, expr: ExprPossibilities) -> R;
 }
