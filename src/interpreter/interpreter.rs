@@ -221,8 +221,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                 }
                             }
                         }
-                    },
-                    
+                    }
                     _ => return Err(InterpException::PlaceHolder)
                 }
             }
@@ -282,6 +281,20 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                 },
                             }
                         }
+                    },
+                    TokenType::IF => {
+                        let mut env: Environment = Environment::new();
+                        env.enclosing = Some(Box::new(self.globals.clone()));
+                        self.globals = env.clone();
+                        for line in scope.inner.iter() {
+                            self.evaluate(&line)?;
+                        }
+
+                        unsafe {
+                            self.globals = *env.enclosing.unwrap_unchecked();
+                            return Ok(Primitive::None);
+                        }
+                        
                     }
                     _ => return Err(InterpException::PlaceHolder)
                 }

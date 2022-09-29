@@ -80,7 +80,7 @@ impl Parser {
     fn scope(&mut self, scope_type: TokenType, ident: Option<Token>) -> Result<ExprPossibilities, ParsingException> {
         let mut expr_list: Vec<ExprPossibilities> = Vec::new();
         while !self.match_tok(&[TokenType::RIGHT_BRACE]) {
-            let expr = self.declaration()?;
+            let expr = self.call_env()?;
             expr_list.push(expr)
         }
 
@@ -137,16 +137,20 @@ impl Parser {
     fn ternary(&mut self) -> Result<ExprPossibilities, ParsingException> {
         let expr = self.expression()?;
         if self.match_tok(&[TokenType::TERNARYTRUE]) {
-            let true_case = self.expression()?;
+            self.consume(&[TokenType::LEFT_BRACE], ParsingException::InvalidTernaryExpr(self.previous().clone()))?;
+            let true_case = self.scope(TokenType::IF, None)?;
 
             if self.match_tok(&[TokenType::TERNARYFALSE]) {
-                let false_case = self.expression()?;
+                self.consume(&[TokenType::LEFT_BRACE], ParsingException::InvalidTernaryExpr(self.previous().clone()))?;
+                let false_case = self.scope(TokenType::IF, None)?;
+                self.consume(&[TokenType::SEMICOLON], ParsingException::PlaceHolder);
                 return Ok(ExprPossibilities::Ternary(Ternary {
                     condition: Box::new(expr),
                     false_cond: Some(Box::new(false_case)),
                     true_cond: Some(Box::new(true_case)),
                 }));
             } else {
+                self.consume(&[TokenType::SEMICOLON], ParsingException::PlaceHolder);
                 return Ok(ExprPossibilities::Ternary(Ternary {
                     condition: Box::new(expr),
                     false_cond: None,
@@ -154,16 +158,20 @@ impl Parser {
                 }));
             }
         } else if self.match_tok(&[TokenType::TERNARYFALSE]) {
-            let false_case = self.expression()?;
+            self.consume(&[TokenType::LEFT_BRACE], ParsingException::InvalidTernaryExpr(self.previous().clone()))?;
+            let false_case = self.scope(TokenType::IF, None)?;
 
             if self.match_tok(&[TokenType::TERNARYTRUE]) {
-                let true_case = self.expression()?;
+                self.consume(&[TokenType::LEFT_BRACE], ParsingException::InvalidTernaryExpr(self.previous().clone()))?;
+                let true_case = self.scope(TokenType::IF, None)?;
+                self.consume(&[TokenType::SEMICOLON], ParsingException::PlaceHolder);
                 return Ok(ExprPossibilities::Ternary(Ternary {
                     condition: Box::new(expr),
                     false_cond: Some(Box::new(false_case)),
                     true_cond: Some(Box::new(true_case)),
                 }));
             } else {
+                self.consume(&[TokenType::SEMICOLON], ParsingException::PlaceHolder);
                 return Ok(ExprPossibilities::Ternary(Ternary {
                     condition: Box::new(expr),
                     false_cond: Some(Box::new(false_case)),
@@ -171,6 +179,7 @@ impl Parser {
                 }));
             }
         } else {
+            // self.consume(&[TokenType::LEFT_BRACE], ParsingException::PlaceHolder);
             return Ok(expr);
         }
     }
