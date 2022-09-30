@@ -33,7 +33,7 @@ impl Unwindable for ParsingException {
                 "Parsing Error: Invalid Ternary Expression on line: {}",
                 tok.line - 1
             ),
-            ParsingException::PlaceHolder => String::from("Limitation of rust borrow checker"),
+            ParsingException::PlaceHolder => String::from("Parsing Error: Limitation of rust borrow checker"),
             ParsingException::InvalidPrint(tok) => format!("Parsing Error: Invalid print statement on line {}", tok.line),
             Self::InvalidAssign(tok) => format!("Parsing Error: missing '=' after ident on line {}", tok.line),
             Self::InvalidIdentifier(tok) => format!("Parsing Error: Invalid variable expr on line {}", tok.line),

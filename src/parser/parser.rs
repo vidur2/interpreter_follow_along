@@ -16,7 +16,7 @@ impl Parser {
     }
 
     pub fn parse(&mut self) -> Result<ExprPossibilities, ParsingException> {
-        let expr_wrapped = self.loops();
+        let expr_wrapped = self.while_loop();
         if let Ok(expr) = expr_wrapped {
             // println!("{:?}", expr);
             return Ok(expr);
@@ -28,12 +28,22 @@ impl Parser {
         }
     }
 
-    fn loops(&mut self) -> Result<ExprPossibilities, ParsingException>{
-        if self.match_tok(&[TokenType::WHILE, TokenType::FOR]) {
-            let tok_type = self.previous().tok.clone();
+    fn while_loop(&mut self) -> Result<ExprPossibilities, ParsingException> {
+        while self.match_tok(&[TokenType::WHILE]) {
             let expr = self.chain_bool()?;
             self.consume(&[TokenType::LEFT_BRACE], ParsingException::InvalidLoop(self.previous().clone()))?;
-            return self.scope(tok_type, None, Some(Box::new(expr)));
+            return self.scope(TokenType::WHILE, None, Some(Box::new(expr)));
+        }
+
+        return self.for_loop();
+    }
+
+    fn for_loop(&mut self) -> Result<ExprPossibilities, ParsingException> {
+        while self.match_tok(&[TokenType::FOR]) {
+            if !self.match_tok(&[TokenType::LEFT_BRACE]) {
+                let declaration = self.declaration()?;
+                return self.scope(TokenType::FOR, None, Some(Box::new(declaration)))
+            }
         }
 
         return self.call_env();
@@ -91,7 +101,7 @@ impl Parser {
     fn scope(&mut self, scope_type: TokenType, ident: Option<Token>, condition: Option<Box<ExprPossibilities>>) -> Result<ExprPossibilities, ParsingException> {
         let mut expr_list: Vec<ExprPossibilities> = Vec::new();
         while !self.match_tok(&[TokenType::RIGHT_BRACE]) {
-            let expr = self.loops()?;
+            let expr = self.while_loop()?;
             expr_list.push(expr)
         }
 
@@ -207,7 +217,7 @@ impl Parser {
                 operator,
             })
         }
-        
+
         return Ok(expr);
     }
 
@@ -225,7 +235,7 @@ impl Parser {
                 left: Box::new(expr),
                 right: Box::new(right),
                 operator,
-            })
+            });
         }
 
         return Ok(expr);
@@ -247,7 +257,8 @@ impl Parser {
                 left: Box::new(expr),
                 right: Box::new(right),
                 operator,
-            })
+            });
+            self.consume(&[TokenType::SEMICOLON], ParsingException::PlaceHolder);
         }
 
         return Ok(expr);
@@ -307,6 +318,7 @@ impl Parser {
                 literal: crate::scanner::token::Primitive::Bool(false),
             }));
         };
+
         if self.match_tok(&[TokenType::TRUE]) {
             return Ok(ExprPossibilities::Literal(Literal {
                 literal: crate::scanner::token::Primitive::Bool(true),
@@ -329,12 +341,16 @@ impl Parser {
         }
 
         if self.match_tok(&[TokenType::LEFT_PAREN]) {
-            if let Ok(expr) = self.expression() {
-                self.consume(&[TokenType::RIGHT_PAREN], ParsingException::UnterminatedParenthesis(self.previous().clone()))?;
-                return Ok(ExprPossibilities::Grouping(Grouping {
-                    expr: Box::new(expr),
-                }));
+            let mut inner = Vec::new();
+
+            while let Ok(expr) = self.declaration() {
+                inner.push(expr);
             }
+            self.consume(&[TokenType::RIGHT_PAREN], ParsingException::UnterminatedParenthesis(self.previous().clone()))?;
+            self.consume(&[TokenType::LEFT_BRACE], ParsingException::PlaceHolder);
+            return Ok(ExprPossibilities::Grouping(Grouping {
+                expr: Box::new(inner),
+            }));
         }
 
         if self.match_tok(&[TokenType::SEMICOLON]) {

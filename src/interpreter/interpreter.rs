@@ -159,7 +159,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                 }
             },
             crate::ast::expr_types::ExprPossibilities::Grouping(group) => {
-                return self.evaluate(group.expr.as_ref());
+                return self.evaluate(&group.expr[0]);
             },
             crate::ast::expr_types::ExprPossibilities::Literal(lit) => {
                 return Ok(lit.literal);
@@ -309,6 +309,26 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                             }
                             self.globals = *env.enclosing.unwrap_unchecked();
                         }
+                        return Ok(Primitive::None);
+                    },
+                    TokenType::FOR => {
+                        let env = self.enclose();
+                        unsafe {
+                            let cond = *scope.condition.unwrap_unchecked();
+                            if let ExprPossibilities::Grouping(group) = cond {
+                                self.evaluate(&group.expr[0])?;
+                                while let Primitive::Bool(true) = self.evaluate(&group.expr[1])? {
+                                    for line in scope.inner.iter() {
+                                        self.evaluate(line)?;
+                                    }
+
+                                    self.evaluate(&group.expr[2])?;
+                                }
+                            }
+
+                            self.globals = *env.enclosing.unwrap_unchecked();
+                        }
+
                         return Ok(Primitive::None);
                     }
                     _ => return Err(InterpException::PlaceHolder)

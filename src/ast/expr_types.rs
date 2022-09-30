@@ -20,7 +20,7 @@ pub struct Binary {
 
 #[derive(Clone, Debug)]
 pub struct Grouping {
-    pub expr: Box<ExprPossibilities>,
+    pub expr: Box<Vec<ExprPossibilities>>,
 }
 
 #[derive(Clone, Debug)]

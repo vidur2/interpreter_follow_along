@@ -30,7 +30,7 @@ impl Unwindable for InterpException {
             InterpException::InvalidUnary(tok) => format!("Invalid unary expr on line {}", tok.operator.line),
             InterpException::InvalidTernaryExpr(line) => format!("Used string in ternary expr on line {}", line),
             InterpException::InvalidBinary(binary) => format!("Invalid Expression on line {}", binary.operator.line), 
-            InterpException::PlaceHolder => String::from("Limitation of rust borrow checker"),
+            InterpException::PlaceHolder => String::from("Interp Error: Limitation of rust borrow checker"),
             InterpException::IdentifierNoExist(ident) => format!("Identifier '{}' does not exist", ident),
             InterpException::DivideByZero(_) => todo!(),
         }
