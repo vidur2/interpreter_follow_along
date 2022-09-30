@@ -126,7 +126,9 @@ impl Parser {
             let ident = name.unwrap_unchecked().clone();
             if self.match_tok(&[TokenType::EQUAL]) {
                 let initializer = ExprPossibilities::Stmt(Stmt { stmt: stmt_type, inner: Some(Box::new(self.ternary()?)), ident: Some(ident)  });
-                self.consume(&[TokenType::NEWLINE, TokenType::SEMICOLON], ParsingException::InvalidIdentifier(self.previous().clone()))?;
+                if self.peek().tok != TokenType::RIGHT_PAREN {
+                    self.consume(&[TokenType::NEWLINE, TokenType::SEMICOLON], ParsingException::InvalidIdentifier(self.previous().clone()))?;
+                }
                 return Ok(initializer);
             }
         }
