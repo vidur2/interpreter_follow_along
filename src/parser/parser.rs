@@ -148,8 +148,8 @@ impl Parser {
         unsafe {
             let ident = name.unwrap_unchecked().clone();
             if self.match_tok(&[TokenType::EQUAL]) {
-                let initializer = ExprPossibilities::Stmt(Stmt { stmt: stmt_type, inner: Some(Box::new(self.ternary()?)), ident: Some(ident), params: None  });
-                if self.peek().tok != TokenType::RIGHT_PAREN {
+                let initializer = ExprPossibilities::Stmt(Stmt { stmt: stmt_type.clone(), inner: Some(Box::new(self.ternary()?)), ident: Some(ident), params: None  });
+                if self.peek().tok != TokenType::RIGHT_PAREN || TokenType::FUNC == stmt_type {
                     self.consume(&[TokenType::NEWLINE, TokenType::SEMICOLON], ParsingException::InvalidIdentifier(self.previous().clone()))?;
                 }
                 return Ok(initializer);
@@ -252,7 +252,6 @@ impl Parser {
 
     fn equality(&mut self) -> Result<ExprPossibilities, ParsingException> {
         let mut expr = self.comparison()?;
-
         while self.match_tok(&[TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL]) {
             let operator = self.previous().clone();
             let right = self.comparison()?;
