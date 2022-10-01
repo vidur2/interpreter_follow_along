@@ -235,25 +235,35 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                             let func_data = self.globals.retrieve(&ident.lexeme)?;
 
                             if let Primitive::Func(func) = func_data {
-                                let func_scope = self.enclose();
+                                let mut func_scope = self.enclose();
                                 let inputted_params = stmt.params.unwrap_unchecked();
-                                match func.func_map.get(&inputted_params.len()) {
+                                match func.func_map.get(&inputted_params.clone().len()) {
                                     Some((params, code))=> {
                                         for (idx, param_name) in params.iter().enumerate() {
-                                            todo!("define environment");
+                                            let prim = self.evaluate(&inputted_params[idx])?;
+                                            if let Primitive::Env(env) = prim {
+                                                func_scope.define_env(&param_name.lexeme, env.vars);
+                                            } else {
+                                                func_scope.define(&param_name.lexeme, prim);
+                                            }
                                         }
-                                        todo!("Execute fn here");
-                                    },
-                                    None => return Err(InterpException::PlaceHolder),
-                                }
+                                        self.globals = func_scope.clone();
+                                        for line in code.inner.iter() {
+                                            self.evaluate(line)?;
+                                        }
 
-                                self.globals = *func_scope.enclosing.unwrap_unchecked();
+                                        self.globals = *func_scope.enclosing.unwrap_unchecked();
+                                        todo!("Handle return here");
+                                    },
+                                    None => {
+                                        self.globals = *func_scope.enclosing.unwrap_unchecked();
+                                        return Err(InterpException::PlaceHolder)
+                                    }
+                                }
                             } else {
                                 return Err(InterpException::PlaceHolder);
                             }
                         }
-
-                        todo!();
                     }
                     _ => return Err(InterpException::PlaceHolder)
                 }
