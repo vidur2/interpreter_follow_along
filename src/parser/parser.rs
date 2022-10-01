@@ -282,7 +282,7 @@ impl Parser {
                 right: Box::new(right),
                 operator,
             });
-            self.consume(&[TokenType::SEMICOLON], ParsingException::PlaceHolder)?;
+            self.consume(&[TokenType::SEMICOLON], ParsingException::PlaceHolder);
         }
 
         return Ok(expr);
