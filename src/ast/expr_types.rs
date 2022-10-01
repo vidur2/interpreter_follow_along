@@ -49,7 +49,8 @@ pub enum ExprPossibilities {
 pub struct Stmt {
     pub stmt: TokenType,
     pub ident: Option<Token>,
-    pub inner: Option<Box<ExprPossibilities>>
+    pub inner: Option<Box<ExprPossibilities>>,
+    pub params: Option<Box<Vec<ExprPossibilities>>>,
 }
 
 #[derive(Clone, Debug)]
@@ -57,7 +58,8 @@ pub struct Scope {
     pub stmt: TokenType,
     pub ident: Option<Token>,
     pub condition: Option<Box<ExprPossibilities>>,
-    pub inner: Vec<ExprPossibilities>
+    pub params: Option<Vec<Token>>,
+    pub inner: Vec<ExprPossibilities>,
 }
 
 // impl Accept<Option<String>> for ExprPossibilities {}

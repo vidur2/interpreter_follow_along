@@ -1,6 +1,6 @@
-use std::{convert::TryInto, fmt::Display, ops::Add};
+use std::{convert::TryInto, fmt::Display, ops::Add, collections::{HashSet, HashMap}};
 
-use crate::{error_reporting::{error_reporter::Literal, scanning_err::ScanningException}, interpreter::environment::Environment};
+use crate::{error_reporting::{error_reporter::Literal, scanning_err::ScanningException}, interpreter::environment::Environment, ast::expr_types::{Stmt, Scope}};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(u8)]
@@ -175,7 +175,28 @@ pub enum Primitive {
     String(String),
     Bool(bool),
     Env(Environment),
+    Func(Func),
     None,
+}
+
+#[derive(Debug, Clone)]
+pub struct Func {
+    pub func_map: HashMap<usize, (Vec<Token>, Box<Scope>)>,
+}
+
+impl PartialEq for Func {
+    fn eq(&self, other: &Self) -> bool {
+        self.func_map.len() == other.func_map.len()
+    }
+}
+
+impl PartialOrd for Func {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        let method_len = self.func_map.len();
+        let other_len = other.func_map.len();
+
+        return Some(method_len.cmp(&other_len));
+    }
 }
 
 impl Primitive {
@@ -186,7 +207,7 @@ impl Primitive {
             Primitive::String(strng) => Some(strng.to_string()),
             Primitive::Bool(boolean) => Some(boolean.to_string()),
             Primitive::Env(env) => Some(format!("{:?}", env)),
-            Primitive::None => None,
+            _ => None,
         }
     }
 }

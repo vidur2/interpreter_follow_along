@@ -1,6 +1,6 @@
 use std::{rc::Rc, collections::HashMap};
 
-use crate::{ast::{ast_traits::{Interperable, Accept}, expr_types::{ExprPossibilities}}, scanner::token::{Primitive, TokenType}, error_reporting::{interp_err::InterpException, parsing_err::ParsingException, error_reporter::Unwindable}};
+use crate::{ast::{ast_traits::{Interperable, Accept}, expr_types::{ExprPossibilities}}, scanner::token::{Primitive, TokenType, Func}, error_reporting::{interp_err::InterpException, parsing_err::ParsingException, error_reporter::Unwindable}};
 
 use super::environment::Environment;
 
@@ -195,6 +195,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                 Primitive::Bool(boolean) => print!("{}", boolean),
                                 Primitive::Env(env) => print!("{:?}", env),
                                 Primitive::None => print!("null"),
+                                Primitive::Func(_) => return Err(InterpException::PlaceHolder)
                             }
 
                             return Ok(Primitive::None);
@@ -210,6 +211,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                     Primitive::Bool(boolean) => println!("{}", boolean),
                                     Primitive::Env(env) => println!("{:?}", env),
                                     Primitive::None => println!("null"),
+                                    Primitive::Func(_) => return Err(InterpException::PlaceHolder),
                                 }
                         }
 
@@ -226,6 +228,32 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                         unsafe {
                             return self.globals.retrieve(&stmt.ident.unwrap_unchecked().lexeme);
                         }
+                    },
+                    TokenType::FUNC => {
+                        unsafe {
+                            let ident = stmt.ident.unwrap_unchecked();
+                            let func_data = self.globals.retrieve(&ident.lexeme)?;
+
+                            if let Primitive::Func(func) = func_data {
+                                let func_scope = self.enclose();
+                                let inputted_params = stmt.params.unwrap_unchecked();
+                                match func.func_map.get(&inputted_params.len()) {
+                                    Some((params, code))=> {
+                                        for (idx, param_name) in params.iter().enumerate() {
+                                            todo!("define environment");
+                                        }
+                                        todo!("Execute fn here");
+                                    },
+                                    None => return Err(InterpException::PlaceHolder),
+                                }
+
+                                self.globals = *func_scope.enclosing.unwrap_unchecked();
+                            } else {
+                                return Err(InterpException::PlaceHolder);
+                            }
+                        }
+
+                        todo!();
                     }
                     _ => return Err(InterpException::PlaceHolder)
                 }
@@ -252,6 +280,27 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
 
             crate::ast::expr_types::ExprPossibilities::Scope(scope) => {
                 match scope.stmt {
+                    TokenType::FUNC => {
+                        unsafe {
+                            let close_ident = scope.ident.clone().unwrap_unchecked().clone();
+                            if let Ok(Primitive::Func(func)) = self.globals.retrieve(&close_ident.lexeme) {
+                                let mut func = func.clone();
+                                let args = scope.params.clone().unwrap_unchecked();
+                                let arg_len = args.len();
+                                if let None = func.func_map.get(&arg_len) {
+                                    func.func_map.insert(arg_len.clone(), (args, Box::new(scope)));
+                                } else {
+                                    return Err(InterpException::PlaceHolder);
+                                }
+                            } else {
+                                let mut func_map = HashMap::new();
+                                let params = scope.params.clone().unwrap_unchecked();
+                                func_map.insert(params.len(), (params, Box::new(scope)));
+                                self.globals.define(&close_ident.lexeme, Primitive::Func(Func { func_map }));
+                            }
+                            return Ok(Primitive::None);
+                        }
+                    },
                     TokenType::CLOS => {
                         unsafe {
                             let clos_ident = scope.ident.unwrap_unchecked().lexeme;
@@ -314,7 +363,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                     TokenType::FOR => {
                         let env = self.enclose();
                         unsafe {
-                            let cond = *scope.condition.unwrap_unchecked();
+                            let cond = *scope.condition.unwrap_unchecked().clone();
                             if let ExprPossibilities::Grouping(group) = cond {
                                 self.evaluate(&group.expr[0])?;
                                 while let Primitive::Bool(true) = self.evaluate(&group.expr[1])? {

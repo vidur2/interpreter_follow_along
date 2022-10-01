@@ -16,7 +16,7 @@ impl Parser {
     }
 
     pub fn parse(&mut self) -> Result<ExprPossibilities, ParsingException> {
-        let expr_wrapped = self.while_loop();
+        let expr_wrapped = self.func_def();
         if let Ok(expr) = expr_wrapped {
             // println!("{:?}", expr);
             return Ok(expr);
@@ -28,11 +28,34 @@ impl Parser {
         }
     }
 
+    fn func_def(&mut self) -> Result<ExprPossibilities, ParsingException> {
+        if self.match_tok(&[TokenType::FUNC]) {
+            let ident = self.consume(&[TokenType::IDENTIFIER], ParsingException::PlaceHolder)?.clone();
+            self.consume(&[TokenType::LEFT_PAREN], ParsingException::PlaceHolder)?;
+            let mut ident_vec = Vec::new();
+
+            while let Ok(tok) = self.consume(&[TokenType::COMMA, TokenType::IDENTIFIER], ParsingException::PlaceHolder) {
+                match tok.tok {
+                    TokenType::IDENTIFIER => {
+                        ident_vec.push(tok.clone())
+                    },
+                    TokenType::COMMA => {},
+                    _ => return Err(ParsingException::PlaceHolder)
+                }
+            }
+            self.consume(&[TokenType::RIGHT_PAREN], ParsingException::PlaceHolder)?;
+            self.consume(&[TokenType::LEFT_BRACE], ParsingException::PlaceHolder)?;
+            return self.scope(TokenType::FUNC, Some(ident), None, Some(ident_vec));
+        }
+        
+        return self.while_loop();
+    }
+
     fn while_loop(&mut self) -> Result<ExprPossibilities, ParsingException> {
         while self.match_tok(&[TokenType::WHILE]) {
             let expr = self.chain_bool()?;
             self.consume(&[TokenType::LEFT_BRACE], ParsingException::InvalidLoop(self.previous().clone()))?;
-            return self.scope(TokenType::WHILE, None, Some(Box::new(expr)));
+            return self.scope(TokenType::WHILE, None, Some(Box::new(expr)), None);
         }
 
         return self.for_loop();
@@ -42,7 +65,7 @@ impl Parser {
         while self.match_tok(&[TokenType::FOR]) {
             if !self.match_tok(&[TokenType::LEFT_BRACE]) {
                 let declaration = self.declaration()?;
-                return self.scope(TokenType::FOR, None, Some(Box::new(declaration)))
+                return self.scope(TokenType::FOR, None, Some(Box::new(declaration)), None)
             }
         }
 
@@ -53,7 +76,7 @@ impl Parser {
         if self.match_tok(&[TokenType::CLOSCALL]) {
             let ident = self.consume(&[TokenType::IDENTIFIER], ParsingException::InvalidEnvCall(self.previous().clone()))?.clone();
             self.consume(&[TokenType::LEFT_BRACE], ParsingException::InvalidEnvCall(self.previous().clone()))?.clone();
-            return self.scope(TokenType::CLOSCALL, Some(ident), None);
+            return self.scope(TokenType::CLOSCALL, Some(ident), None, None);
         }
 
         return self.env_dec();
@@ -77,7 +100,7 @@ impl Parser {
         unsafe {
             let ident = name.unwrap_unchecked().clone();
             if self.match_tok(&[TokenType::EQUAL]) && self.match_tok(&[TokenType::LEFT_BRACE]) {
-                let mut env: Scope = Scope { stmt: TokenType::CLOS, ident: Some(ident.clone()), inner: Vec::new(), condition: None };
+                let mut env: Scope = Scope { stmt: TokenType::CLOS, ident: Some(ident.clone()), inner: Vec::new(), condition: None, params: None };
 
                 while !self.match_tok(&[TokenType::RIGHT_BRACE]) {
                     if self.match_tok(&[TokenType::LET]) {
@@ -98,14 +121,14 @@ impl Parser {
         }
     }
 
-    fn scope(&mut self, scope_type: TokenType, ident: Option<Token>, condition: Option<Box<ExprPossibilities>>) -> Result<ExprPossibilities, ParsingException> {
+    fn scope(&mut self, scope_type: TokenType, ident: Option<Token>, condition: Option<Box<ExprPossibilities>>, params: Option<Vec<Token>>) -> Result<ExprPossibilities, ParsingException> {
         let mut expr_list: Vec<ExprPossibilities> = Vec::new();
         while !self.match_tok(&[TokenType::RIGHT_BRACE]) {
             let expr = self.while_loop()?;
             expr_list.push(expr)
         }
 
-        return Ok(ExprPossibilities::Scope(Scope { stmt: scope_type, ident, inner: expr_list, condition }));
+        return Ok(ExprPossibilities::Scope(Scope { stmt: scope_type, ident, inner: expr_list, condition, params }));
 
     }
 
@@ -125,7 +148,7 @@ impl Parser {
         unsafe {
             let ident = name.unwrap_unchecked().clone();
             if self.match_tok(&[TokenType::EQUAL]) {
-                let initializer = ExprPossibilities::Stmt(Stmt { stmt: stmt_type, inner: Some(Box::new(self.ternary()?)), ident: Some(ident)  });
+                let initializer = ExprPossibilities::Stmt(Stmt { stmt: stmt_type, inner: Some(Box::new(self.ternary()?)), ident: Some(ident), params: None  });
                 if self.peek().tok != TokenType::RIGHT_PAREN {
                     self.consume(&[TokenType::NEWLINE, TokenType::SEMICOLON], ParsingException::InvalidIdentifier(self.previous().clone()))?;
                 }
@@ -151,7 +174,7 @@ impl Parser {
         let expr = self.ternary()?;
         if let ExprPossibilities::Grouping(expr) = expr {
             self.consume(&[TokenType::SEMICOLON], ParsingException::PlaceHolder);
-            return Ok(ExprPossibilities::Stmt(Stmt { stmt: tok, inner: Some(Box::new(ExprPossibilities::Grouping(expr))), ident: None }));
+            return Ok(ExprPossibilities::Stmt(Stmt { stmt: tok, inner: Some(Box::new(ExprPossibilities::Grouping(expr))), ident: None, params: None }));
         } else {
             return Err(ParsingException::InvalidPrint(self.previous().clone()));
         }
@@ -161,11 +184,11 @@ impl Parser {
         let expr = self.chain_bool()?;
         if self.match_tok(&[TokenType::TERNARYTRUE]) {
             self.consume(&[TokenType::LEFT_BRACE], ParsingException::InvalidTernaryExpr(self.previous().clone()))?;
-            let true_case = self.scope(TokenType::IF, None, None)?;
+            let true_case = self.scope(TokenType::IF, None, None, None)?;
 
             if self.match_tok(&[TokenType::TERNARYFALSE]) {
                 self.consume(&[TokenType::LEFT_BRACE], ParsingException::InvalidTernaryExpr(self.previous().clone()))?;
-                let false_case = self.scope(TokenType::IF, None, None)?;
+                let false_case = self.scope(TokenType::IF, None, None, None)?;
                 self.consume(&[TokenType::SEMICOLON], ParsingException::PlaceHolder);
                 return Ok(ExprPossibilities::Ternary(Ternary {
                     condition: Box::new(expr),
@@ -182,11 +205,11 @@ impl Parser {
             }
         } else if self.match_tok(&[TokenType::TERNARYFALSE]) {
             self.consume(&[TokenType::LEFT_BRACE], ParsingException::InvalidTernaryExpr(self.previous().clone()))?;
-            let false_case = self.scope(TokenType::IF, None, None)?;
+            let false_case = self.scope(TokenType::IF, None, None, None)?;
 
             if self.match_tok(&[TokenType::TERNARYTRUE]) {
                 self.consume(&[TokenType::LEFT_BRACE], ParsingException::InvalidTernaryExpr(self.previous().clone()))?;
-                let true_case = self.scope(TokenType::IF, None, None)?;
+                let true_case = self.scope(TokenType::IF, None, None, None)?;
                 self.consume(&[TokenType::SEMICOLON], ParsingException::PlaceHolder);
                 return Ok(ExprPossibilities::Ternary(Ternary {
                     condition: Box::new(expr),
@@ -260,7 +283,7 @@ impl Parser {
                 right: Box::new(right),
                 operator,
             });
-            self.consume(&[TokenType::SEMICOLON], ParsingException::PlaceHolder);
+            self.consume(&[TokenType::SEMICOLON], ParsingException::PlaceHolder)?;
         }
 
         return Ok(expr);
@@ -339,7 +362,23 @@ impl Parser {
         }
 
         if self.match_tok(&[TokenType::IDENTIFIER]) {
-            return Ok(ExprPossibilities::Stmt(Stmt { stmt: TokenType::IDENTIFIER, ident: Some(self.previous().clone()), inner: None }))
+            let ident = self.previous().clone();
+            if self.match_tok(&[TokenType::LEFT_PAREN]) {
+                let mut arg_vec: Vec<ExprPossibilities> = Vec::new();
+                while !self.match_tok(&[TokenType::RIGHT_PAREN]) {
+                    let curr = self.expression()?;
+                    arg_vec.push(curr);
+
+                    let res = self.consume(&[TokenType::COMMA], ParsingException::PlaceHolder);
+
+                    if let Err(err) = res && TokenType::RIGHT_PAREN != self.peek().tok {
+                        return Err(err);
+                    } 
+                }
+                self.consume(&[TokenType::SEMICOLON], ParsingException::PlaceHolder)?;
+                return Ok(ExprPossibilities::Stmt( Stmt { stmt: TokenType::FUNC, ident: Some(ident), inner: None, params: Some(Box::new(arg_vec)) }))
+            }
+            return Ok(ExprPossibilities::Stmt(Stmt { stmt: TokenType::IDENTIFIER, ident: Some(ident), inner: None , params: None}))
         }
 
         if self.match_tok(&[TokenType::LEFT_PAREN]) {
