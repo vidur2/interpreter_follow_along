@@ -107,6 +107,15 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                             return Err(InterpException::InvalidBinary(bin))
                         }
                     },
+                    TokenType::MODULO => {
+                        if let Primitive::Int(num1) = left && let Primitive::Int(num2) = right {
+                            return Ok(Primitive::Int(num1 % num2));
+                        } else if let Primitive::Float(num1) = left && let Primitive::Float(num2) = right {
+                            return Ok(Primitive::Float(num1 % num2));
+                        } else {
+                            return Err(InterpException::InvalidBinary(bin))
+                        }
+                    },
                     TokenType::PLUS => {
                         if let Primitive::Int(num1) = left {
                             match right {

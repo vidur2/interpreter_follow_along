@@ -283,7 +283,7 @@ impl Scanner {
     }
 
     fn is_alpha_numeric(c: char) -> bool {
-        return Self::is_alpha(c) || c >= '0' && c <= '9' || c == '&' || c == '|';
+        return Self::is_alpha(c) || c >= '0' && c <= '9' || c == '&' || c == '|' || c == '_';
     }
 
     fn advance_by(&mut self, num: usize) {
