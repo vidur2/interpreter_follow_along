@@ -149,7 +149,7 @@ impl Parser {
             let ident = name.unwrap_unchecked().clone();
             if self.match_tok(&[TokenType::EQUAL]) {
                 let initializer = ExprPossibilities::Stmt(Stmt { stmt: stmt_type.clone(), inner: Some(Box::new(self.ternary()?)), ident: Some(ident), params: None  });
-                if self.peek().tok != TokenType::RIGHT_PAREN || TokenType::FUNC == stmt_type {
+                if self.previous().tok != TokenType::SEMICOLON && self.peek().tok != TokenType::RIGHT_PAREN {
                     self.consume(&[TokenType::NEWLINE, TokenType::SEMICOLON], ParsingException::InvalidIdentifier(self.previous().clone()))?;
                 }
                 return Ok(initializer);
@@ -159,10 +159,13 @@ impl Parser {
     }
 
     fn statement(&mut self) -> Result<ExprPossibilities, ParsingException> {
-        if self.match_tok(&[TokenType::PRINT, TokenType::PRINTLN]) {
+        if self.match_tok(&[TokenType::PRINT, TokenType::PRINTLN, TokenType::RETURN]) {
             if self.previous().tok == TokenType::PRINT {
                 return self.print(TokenType::PRINT);
-            } else {
+            } if self.previous().tok == TokenType::RETURN {
+                let return_expr = self.expression()?;
+                return Ok(ExprPossibilities::Stmt(Stmt { stmt: TokenType::RETURN, ident: None, inner: Some(Box::new(return_expr)), params: None }))
+            }else {
                 return self.print(TokenType::PRINTLN);
             }
         } 

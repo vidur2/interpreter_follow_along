@@ -8,11 +8,13 @@ mod parser;
 mod scanner;
 mod interpreter;
 
-use std::env;
+use std::{env, collections::VecDeque};
 
+use ast::expr_types::ExprPossibilities;
 use interpreter::interpreter::Interpreter;
 // use ast::ast_printer::AstPrinter;
 use parser::parser::Parser;
+use scanner::token::TokenType;
 
 // static PRINTER: AstPrinter = AstPrinter;
 
@@ -26,13 +28,20 @@ fn main() {
     } else if let Ok(mut scanner) = scanner::scanner::Scanner::input_file(&args[1]) {
         scanner.tokenize_buff();
         let mut parser = Parser::new(scanner.get_buff());
+        let mut expressions: VecDeque<ExprPossibilities> = VecDeque::new();
         while !parser.is_at_end() {
             let expr = parser.parse();
-            if let Ok(expr) = expr {
-                interpreter.interpret(&expr);
+            if let Ok(ExprPossibilities::Scope(scope)) = expr.clone() && let TokenType::FUNC = scope.stmt {
+                expressions.push_front(ExprPossibilities::Scope(scope));
+            } else if let Ok(expr) = expr {
+                expressions.push_back(expr)
             } else {
                 break;
             }
+        }
+
+        for expr in expressions.iter() {
+            interpreter.interpret(expr);
         }
     } else if let Err(err) = scanner::scanner::Scanner::input_file(&args[1]) {
         println!("{}", err);
