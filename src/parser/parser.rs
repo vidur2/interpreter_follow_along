@@ -383,7 +383,9 @@ impl Parser {
                     } 
                 }
 
-                self.consume(&[TokenType::SEMICOLON], ParsingException::PlaceHolder)?;
+                if self.previous().tok != TokenType::RIGHT_PAREN {
+                    self.consume(&[TokenType::SEMICOLON], ParsingException::PlaceHolder)?;
+                }
                 return Ok(ExprPossibilities::Stmt( Stmt { stmt: TokenType::FUNC, ident: Some(ident), inner: None, params: Some(Box::new(arg_vec)) }))
             }
             return Ok(ExprPossibilities::Stmt(Stmt { stmt: TokenType::IDENTIFIER, ident: Some(ident), inner: None , params: None}))

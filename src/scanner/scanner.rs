@@ -245,6 +245,7 @@ impl Scanner {
         let tok_type = TokenType::match_keyword(substr);
 
         self.add_token(tok_type, None);
+
         self.curr_char -= 1;
     }
 
