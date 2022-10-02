@@ -185,6 +185,12 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
             },
             ExprPossibilities::Stmt(stmt) => {
                 match stmt.stmt {
+                    TokenType::RETURN => {
+                        unsafe {
+                            let expr = *stmt.inner.unwrap_unchecked();
+                            return self.evaluate(&expr);
+                        }
+                    }
                     TokenType::PRINT => {
                         unsafe {
                             let expr = self.evaluate(&stmt.inner.unwrap_unchecked())?;
@@ -249,11 +255,14 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                         }
                                         self.globals = func_scope.clone();
                                         for line in code.inner.iter() {
-                                            self.evaluate(line)?;
+                                            let prim = self.evaluate(line)?;
+                                            if Primitive::None != prim {
+                                                return Ok(prim);
+                                            }
                                         }
 
                                         self.globals = *func_scope.enclosing.unwrap_unchecked();
-                                        todo!("Handle return here");
+                                        return Ok(Primitive::None);
                                     },
                                     None => {
                                         self.globals = *func_scope.enclosing.unwrap_unchecked();
@@ -337,7 +346,10 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                     env.enclosing = Some(Box::new(self.globals.clone()));
                                     self.globals = env.clone();
                                     for line in scope.inner.iter() {
-                                        self.evaluate(line)?;
+                                       let prim = self.evaluate(line)?;
+                                       if Primitive::None != prim {
+                                        return Ok(prim);
+                                       }
                                     }
                                     self.globals = *env.enclosing.unwrap_unchecked();
                                     return Ok(Primitive::None);
@@ -349,7 +361,10 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                     TokenType::IF => {
                         let env = self.enclose();
                         for line in scope.inner.iter() {
-                            self.evaluate(&line)?;
+                            let prim = self.evaluate(&line)?;
+                            if prim != Primitive::None {
+                                return Ok(prim);
+                            }
                         }
 
                         unsafe {
@@ -363,7 +378,10 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                         unsafe {
                             while let Primitive::Bool(true) = self.evaluate(&scope.clone().condition.unwrap_unchecked())? {
                                 for line in scope.inner.iter() {
-                                    self.evaluate(line)?;
+                                    let prim = self.evaluate(line)?;
+                                    if Primitive::None != prim {
+                                        return Ok(prim);
+                                    }
                                 }
                             }
                             self.globals = *env.enclosing.unwrap_unchecked();
@@ -378,7 +396,10 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                 self.evaluate(&group.expr[0])?;
                                 while let Primitive::Bool(true) = self.evaluate(&group.expr[1])? {
                                     for line in scope.inner.iter() {
-                                        self.evaluate(line)?;
+                                        let prim = self.evaluate(line)?;
+                                        if Primitive::None != prim {
+                                            return Ok(prim);
+                                        }
                                     }
 
                                     self.evaluate(&group.expr[2])?;

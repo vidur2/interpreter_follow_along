@@ -43,6 +43,7 @@ impl Parser {
                     _ => return Err(ParsingException::PlaceHolder)
                 }
             }
+
             self.consume(&[TokenType::RIGHT_PAREN], ParsingException::PlaceHolder)?;
             self.consume(&[TokenType::LEFT_BRACE], ParsingException::PlaceHolder)?;
             return self.scope(TokenType::FUNC, Some(ident), None, Some(ident_vec));
@@ -164,8 +165,12 @@ impl Parser {
                 return self.print(TokenType::PRINT);
             } if self.previous().tok == TokenType::RETURN {
                 let return_expr = self.expression()?;
+                if self.previous().tok != TokenType::SEMICOLON {
+                    self.consume(&[TokenType::SEMICOLON], ParsingException::PlaceHolder)?;
+                }
+
                 return Ok(ExprPossibilities::Stmt(Stmt { stmt: TokenType::RETURN, ident: None, inner: Some(Box::new(return_expr)), params: None }))
-            }else {
+            } else {
                 return self.print(TokenType::PRINTLN);
             }
         } 
@@ -377,6 +382,7 @@ impl Parser {
                         return Err(err);
                     } 
                 }
+
                 self.consume(&[TokenType::SEMICOLON], ParsingException::PlaceHolder)?;
                 return Ok(ExprPossibilities::Stmt( Stmt { stmt: TokenType::FUNC, ident: Some(ident), inner: None, params: Some(Box::new(arg_vec)) }))
             }
