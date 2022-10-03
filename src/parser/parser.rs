@@ -73,6 +73,7 @@ impl Parser {
         return self.call_env();
     }
 
+
     fn call_env(&mut self) -> Result<ExprPossibilities, ParsingException>{
         if self.match_tok(&[TokenType::CLOSCALL]) {
             let ident = self.consume(&[TokenType::IDENTIFIER], ParsingException::InvalidEnvCall(self.previous().clone()))?.clone();
