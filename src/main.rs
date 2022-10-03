@@ -16,7 +16,7 @@ use import_sys::import_sys::Importer;
 use interpreter::interpreter::Interpreter;
 // use ast::ast_printer::AstPrinter;
 use parser::parser::Parser;
-use scanner::token::TokenType;
+use scanner::token::{TokenType, Token};
 
 // static PRINTER: AstPrinter = AstPrinter;
 
@@ -30,6 +30,12 @@ fn main() {
         scanner::scanner::Scanner::accept_input();
     } else if let Ok(mut scanner) = scanner::scanner::Scanner::input_file(&args[1]) {
         scanner.tokenize_buff();
+        scanner.token.push(Token {
+            tok: TokenType::EOF,
+            lexeme: String::new(),
+            line: usize::MAX,
+            literal: None,
+        });
         let mut parser = Parser::new(scanner.get_buff());
         let mut expressions: VecDeque<ExprPossibilities> = VecDeque::new();
         while !parser.is_at_end() {
@@ -43,10 +49,12 @@ fn main() {
             }
         }
 
-        importer.import_files(parser.imports, &mut expressions);
+        importer.import_files(parser.imports, &mut interpreter);
+
         for expr in expressions.iter() {
             interpreter.interpret(expr);
         }
+
     } else if let Err(err) = scanner::scanner::Scanner::input_file(&args[1]) {
         println!("{}", err);
     }

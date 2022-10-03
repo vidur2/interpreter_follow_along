@@ -340,6 +340,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                     },
                     TokenType::CLOS => unsafe {
                         let clos_ident = scope.ident.unwrap_unchecked().lexeme;
+
                         let mut clos_data: HashMap<String, Primitive> = HashMap::new();
                         for var in scope.inner {
                             if let ExprPossibilities::Stmt(var) = var {

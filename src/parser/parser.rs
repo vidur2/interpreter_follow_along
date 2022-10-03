@@ -43,6 +43,7 @@ impl Parser {
             self.imports.insert(ident.lexeme);
             self.match_tok(&[TokenType::SEMICOLON]);
         }
+
         return self.func_def();
     }
 
