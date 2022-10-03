@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, rc::Rc, ops::Deref};
 
 use crate::{
     ast::{
@@ -245,7 +245,14 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                     return Ok(Primitive::None);
                 },
                 TokenType::IDENTIFIER => unsafe {
-                    return self.globals.retrieve(&stmt.ident.unwrap_unchecked().lexeme);
+                    match stmt.inner {
+                        Some(value) => {
+                            let primtive = self.evaluate(&value)?.clone();
+                            self.globals.redefine(&stmt.ident.unwrap_unchecked().lexeme, primtive)?;
+                            return Ok(Primitive::None);
+                        },
+                        None => return self.globals.retrieve(&stmt.ident.unwrap_unchecked().lexeme),
+                    }
                 },
                 TokenType::FUNC => unsafe {
                     let ident = stmt.ident.unwrap_unchecked();

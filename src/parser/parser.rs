@@ -529,7 +529,7 @@ impl Parser {
                 let expr = self.while_loop()?;
                 self.match_tok(&[TokenType::SEMICOLON]);
                 return Ok(ExprPossibilities::Stmt(Stmt {
-                    stmt: TokenType::LET,
+                    stmt: TokenType::IDENTIFIER,
                     ident: Some(ident),
                     inner: Some(Box::new(expr)),
                     params: None,

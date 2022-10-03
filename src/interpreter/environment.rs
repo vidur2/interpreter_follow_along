@@ -54,4 +54,21 @@ impl Environment {
             return Err(InterpException::IdentifierNoExist(name.to_string()));
         }
     }
+
+    pub fn redefine(&mut self, name: &str, value: Primitive) -> Result<(), InterpException> {
+        if let Some(_) = self.vars.get(name) {
+            if let Primitive::Env(env) = value {
+                self.define_env(name, env.vars.clone());
+            } else {
+                self.define(name, value);
+            }
+            return Ok(());
+        } else if let Some(mut enc) = self.enclosing.clone() {
+            enc.as_mut().redefine(name, value)?;
+            self.enclosing = Some(enc);
+            return Ok(());
+        } else {
+            return Err(InterpException::IdentifierNoExist(name.to_string()));
+        }
+    }
 }
