@@ -4,13 +4,15 @@
 
 mod ast;
 mod error_reporting;
+mod import_sys;
+mod interpreter;
 mod parser;
 mod scanner;
-mod interpreter;
 
-use std::{env, collections::VecDeque};
+use std::{collections::VecDeque, env};
 
 use ast::expr_types::ExprPossibilities;
+use import_sys::import_sys::Importer;
 use interpreter::interpreter::Interpreter;
 // use ast::ast_printer::AstPrinter;
 use parser::parser::Parser;
@@ -21,6 +23,7 @@ use scanner::token::TokenType;
 fn main() {
     let args: Vec<String> = env::args().collect();
     let mut interpreter = Interpreter::new();
+    let mut importer = Importer::new();
     if args.len() > 2 {
         println!("Error: format: interpreter_follow_along [filepath]")
     } else if args.len() == 1 {
@@ -40,6 +43,7 @@ fn main() {
             }
         }
 
+        importer.import_files(parser.imports, &mut expressions);
         for expr in expressions.iter() {
             interpreter.interpret(expr);
         }

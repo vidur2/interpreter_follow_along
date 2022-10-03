@@ -1,6 +1,15 @@
-use std::{convert::TryInto, fmt::Display, ops::Add, collections::{HashSet, HashMap}};
+use std::{
+    collections::{HashMap, HashSet},
+    convert::TryInto,
+    fmt::Display,
+    ops::Add,
+};
 
-use crate::{error_reporting::{error_reporter::Literal, scanning_err::ScanningException}, interpreter::environment::Environment, ast::expr_types::{Stmt, Scope}};
+use crate::{
+    ast::expr_types::{Scope, Stmt},
+    error_reporting::{error_reporter::Literal, scanning_err::ScanningException},
+    interpreter::environment::Environment,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(u8)]
@@ -60,6 +69,7 @@ pub enum TokenType {
     CLOSCALL,
     SWITCH,
     FUNC,
+    IMPORT,
 
     ERROR,
 
@@ -85,7 +95,7 @@ impl TokenType {
             ';' => Ok((TokenType::SEMICOLON, 1)),
             '*' => Ok((TokenType::STAR, 1)),
             '%' => Ok((TokenType::MODULO, 1)),
-            '?' => {Ok((TokenType::TERNARYTRUE, 1))},
+            '?' => Ok((TokenType::TERNARYTRUE, 1)),
             ':' => Ok((TokenType::TERNARYFALSE, 1)),
             '>' => {
                 if Self::match_char(next, '=') {
@@ -155,6 +165,7 @@ impl TokenType {
             "switch" => TokenType::SWITCH,
             "func" => TokenType::FUNC,
             "println" => TokenType::PRINTLN,
+            "import" => TokenType::IMPORT,
             _ => TokenType::IDENTIFIER,
         }
     }

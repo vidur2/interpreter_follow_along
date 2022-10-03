@@ -1,5 +1,3 @@
-
-
 use crate::scanner::token::{Primitive, Token, TokenType};
 
 use super::ast_traits::Accept;

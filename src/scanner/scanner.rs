@@ -1,9 +1,11 @@
 use crate::{
+    ast::ast_traits::Interperable,
     error_reporting::{
         error_reporter::{ErrorReport, Literal, Unwindable},
         scanning_err::ScanningException,
     },
-    parser::parser::Parser, interpreter::interpreter::Interpreter, ast::ast_traits::Interperable,
+    interpreter::interpreter::Interpreter,
+    parser::parser::Parser,
 };
 
 use super::token::{Primitive, Token, TokenType};
@@ -101,8 +103,7 @@ impl Scanner {
                         let expr = parser.parse();
                         if let Ok(expr_uw) = expr {
                             interpreter.interpret(&expr_uw);
-                        }
-                        else if let Err(err) = expr {
+                        } else if let Err(err) = expr {
                             parser.current += 1;
                         }
                     }
@@ -123,7 +124,6 @@ impl Scanner {
         let buff_len_idx = self.buff.len() - 1;
         let cloned_ref = self.clone();
         let bytes = cloned_ref.buff.as_bytes();
-    
 
         while !self.is_at_end() {
             let c: char = bytes[self.curr_char] as char;
