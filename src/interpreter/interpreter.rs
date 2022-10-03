@@ -360,7 +360,19 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                         return Ok(prim);
                                     }
                                 }
+
+                                for key in env.clone().vars.keys() {
+                                    let value = self.globals.retrieve(key)?;
+                                    if let Primitive::Env(env2) = value {
+                                        env.define_env(key, env2.vars);
+                                    } else {
+                                        env.define(key, value);
+                                    }
+                                }
+
                                 self.globals = *env.enclosing.unwrap_unchecked();
+
+                                self.globals.define_env(&clos_ident, env.vars);
                                 return Ok(Primitive::None);
                             } else {
                                 return Err(InterpException::PlaceHolder);

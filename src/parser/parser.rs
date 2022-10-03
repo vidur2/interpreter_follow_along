@@ -525,6 +525,15 @@ impl Parser {
                     inner: None,
                     params: Some(Box::new(arg_vec)),
                 }));
+            } else if self.match_tok(&[TokenType::EQUAL]) {
+                let expr = self.while_loop()?;
+                self.match_tok(&[TokenType::SEMICOLON]);
+                return Ok(ExprPossibilities::Stmt(Stmt {
+                    stmt: TokenType::LET,
+                    ident: Some(ident),
+                    inner: Some(Box::new(expr)),
+                    params: None,
+                }))
             }
             return Ok(ExprPossibilities::Stmt(Stmt {
                 stmt: TokenType::IDENTIFIER,
