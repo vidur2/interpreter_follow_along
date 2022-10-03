@@ -161,7 +161,7 @@ impl Parser {
     }
 
     fn statement(&mut self) -> Result<ExprPossibilities, ParsingException> {
-        if self.match_tok(&[TokenType::PRINT, TokenType::PRINTLN, TokenType::RETURN]) {
+        if self.match_tok(&[TokenType::PRINT, TokenType::PRINTLN, TokenType::RETURN, TokenType::IF]) {
             if self.previous().tok == TokenType::PRINT {
                 return self.print(TokenType::PRINT);
             } if self.previous().tok == TokenType::RETURN {
@@ -171,12 +171,34 @@ impl Parser {
                 }
 
                 return Ok(ExprPossibilities::Stmt(Stmt { stmt: TokenType::RETURN, ident: None, inner: Some(Box::new(return_expr)), params: None }))
+            } 
+            if self.previous().tok == TokenType::IF {
+                return self.if_stmt();
             } else {
                 return self.print(TokenType::PRINTLN);
             }
         } 
 
         return self.ternary();
+    }
+
+
+    fn if_stmt(&mut self) -> Result<ExprPossibilities, ParsingException> {
+        let condition = self.chain_bool()?;
+        self.consume(&[TokenType::LEFT_BRACE], ParsingException::InvalidTernaryExpr(self.previous().clone()))?;
+        let true_code = self.scope(TokenType::IF, None, Some(Box::new(condition.clone())), None)?;
+        let mut false_code: Option<Box<ExprPossibilities>> = None;
+        if self.match_tok(&[TokenType::ELSE]) {
+            if self.peek().tok != TokenType::IF {
+                self.consume(&[TokenType::LEFT_BRACE], ParsingException::InvalidTernaryExpr(self.previous().clone()))?;
+                let not_cond: Unary = Unary { operator: Token { tok: TokenType::BANG, lexeme: "!".to_string(), line: self.peek().line, literal: None }, right: Box::new(condition.clone()) } ;
+                false_code = Some(Box::new(self.scope(TokenType::IF, None, Some(Box::new(ExprPossibilities::Unary(not_cond))), None)?));
+            } else {
+                false_code = Some(Box::new(self.statement()?));
+            }
+        }
+
+        return Ok(ExprPossibilities::Ternary(Ternary { condition: Box::new(condition), false_cond: false_code, true_cond: Some(Box::new(true_code)) }))
     }
 
     fn print(&mut self, tok: TokenType) -> Result<ExprPossibilities, ParsingException> {
