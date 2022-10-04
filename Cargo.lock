@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "interpreter_follow_along"
+name = "vmod"
 version = "0.1.0"
