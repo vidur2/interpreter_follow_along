@@ -16,7 +16,7 @@ use import_sys::import_sys::Importer;
 use interpreter::interpreter::Interpreter;
 // use ast::ast_printer::AstPrinter;
 use parser::parser::Parser;
-use scanner::token::{TokenType, Token};
+use scanner::token::{Token, TokenType};
 
 // static PRINTER: AstPrinter = AstPrinter;
 
@@ -54,7 +54,6 @@ fn main() {
         for expr in expressions.iter() {
             interpreter.interpret(expr);
         }
-
     } else if let Err(err) = scanner::scanner::Scanner::input_file(&args[1]) {
         println!("{}", err);
     }

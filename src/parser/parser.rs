@@ -36,10 +36,11 @@ impl Parser {
     }
 
     fn import(&mut self) -> Result<ExprPossibilities, ParsingException> {
-        if self.match_tok(&[TokenType::IMPORT]) {
+        while self.match_tok(&[TokenType::IMPORT]) {
             let ident = self
                 .consume(&[TokenType::IDENTIFIER], ParsingException::PlaceHolder)?
                 .clone();
+
             self.imports.insert(ident.lexeme);
             self.match_tok(&[TokenType::SEMICOLON]);
         }
@@ -48,7 +49,7 @@ impl Parser {
     }
 
     fn func_def(&mut self) -> Result<ExprPossibilities, ParsingException> {
-        if self.match_tok(&[TokenType::FUNC]) {
+        while self.match_tok(&[TokenType::FUNC]) {
             let ident = self
                 .consume(&[TokenType::IDENTIFIER], ParsingException::PlaceHolder)?
                 .clone();
@@ -99,7 +100,7 @@ impl Parser {
     }
 
     fn call_env(&mut self) -> Result<ExprPossibilities, ParsingException> {
-        if self.match_tok(&[TokenType::CLOSCALL]) {
+        while self.match_tok(&[TokenType::CLOSCALL]) {
             let ident = self
                 .consume(
                     &[TokenType::IDENTIFIER],
@@ -205,7 +206,7 @@ impl Parser {
             if self.match_tok(&[TokenType::EQUAL]) {
                 let initializer = ExprPossibilities::Stmt(Stmt {
                     stmt: stmt_type.clone(),
-                    inner: Some(Box::new(self.ternary()?)),
+                    inner: Some(Box::new(self.func_def()?)),
                     ident: Some(ident),
                     params: None,
                 });
@@ -374,6 +375,19 @@ impl Parser {
         }
     }
 
+    fn syntax_sugar(&mut self) -> Result<ExprPossibilities, ParsingException> {
+        if self.match_tok(&[TokenType::IDENTIFIER]) {
+            let ident = self.previous();
+            let operator = self.advance();
+            if self.match_tok(&[TokenType::EQUAL]) {
+                let expr = self.expression()?;
+                // return Ok(ExprPossibilities::Binary(Binary { left: ident, right: Box::new(expr), operator: operator.clone() }));
+            }
+
+        }
+        return Err(ParsingException::PlaceHolder)
+    }
+
     fn chain_bool(&mut self) -> Result<ExprPossibilities, ParsingException> {
         let mut expr = self.expression()?;
 
@@ -534,7 +548,7 @@ impl Parser {
                     ident: Some(ident),
                     inner: Some(Box::new(expr)),
                     params: None,
-                }))
+                }));
             }
             return Ok(ExprPossibilities::Stmt(Stmt {
                 stmt: TokenType::IDENTIFIER,

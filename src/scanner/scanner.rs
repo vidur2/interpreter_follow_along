@@ -75,7 +75,6 @@ impl Scanner {
 
     // Shell mode
     pub fn accept_input() {
-        let mut lexer = Self::start_scanner();
         let mut interpreter = Interpreter::new();
 
         loop {
@@ -86,10 +85,10 @@ impl Scanner {
                 if line.contains("exit()") {
                     break;
                 } else {
+                    let mut lexer = Self::start_scanner();
                     lexer.token.pop();
                     lexer.read_as_buff(line);
                     lexer.tokenize_buff();
-                    // println!("{:?}", lexer.token);
                     lexer.token.push(Token {
                         tok: TokenType::EOF,
                         lexeme: String::new(),
@@ -104,6 +103,7 @@ impl Scanner {
                         if let Ok(expr_uw) = expr {
                             interpreter.interpret(&expr_uw);
                         } else if let Err(err) = expr {
+                            println!("{:?}", err);
                             parser.current += 1;
                         }
                     }

@@ -1,27 +1,27 @@
 use std::collections::{HashSet, VecDeque};
 
 use crate::{
-    ast::expr_types::{ExprPossibilities, Scope, Stmt, Literal},
+    ast::expr_types::{ExprPossibilities, Literal, Scope, Stmt},
+    interpreter::{environment::Environment, interpreter::Interpreter},
     parser::parser::Parser,
-    scanner::{scanner::Scanner, token::{TokenType, Token, Func}}, interpreter::{environment::Environment, interpreter::Interpreter},
+    scanner::{
+        scanner::Scanner,
+        token::{Func, Token, TokenType},
+    },
 };
 
 pub struct Importer {
-    parser: Parser
+    parser: Parser,
 }
 
 impl Importer {
     pub fn new() -> Self {
         return Self {
-            parser: Parser::new(Vec::new())
+            parser: Parser::new(Vec::new()),
         };
     }
 
-    pub fn import_files(
-        &mut self,
-        files: HashSet<String>,
-        global_interp: &mut Interpreter,
-    ) {
+    pub fn import_files(&mut self, files: HashSet<String>, global_interp: &mut Interpreter) {
         let paths = std::fs::read_dir("./").unwrap();
 
         for path in paths {
@@ -49,7 +49,9 @@ impl Importer {
                         }
                     }
                 }
-                global_interp.globals.define_env(split_file[0], interpreter.globals.vars);
+                global_interp
+                    .globals
+                    .define_env(split_file[0], interpreter.globals.vars);
             }
         }
     }
