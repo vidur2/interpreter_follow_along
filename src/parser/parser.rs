@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::{
     ast::expr_types::{Binary, ExprPossibilities, Grouping, Literal, Scope, Stmt, Ternary, Unary},
     error_reporting::{error_reporter::Unwindable, parsing_err::ParsingException},
-    scanner::token::{Token, TokenType},
+    scanner::token::{Token, TokenType, Primitive},
 };
 
 #[derive(Clone)]
@@ -43,6 +43,7 @@ impl Parser {
 
             self.imports.insert(ident.lexeme);
             self.match_tok(&[TokenType::SEMICOLON]);
+            return Ok(ExprPossibilities::Literal(Literal { literal: Primitive::None }))
         }
 
         return self.func_def();
