@@ -61,6 +61,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
             crate::ast::expr_types::ExprPossibilities::Binary(bin) => {
                 let left = self.evaluate(&bin.left)?;
                 let right = self.evaluate(&bin.right)?;
+
                 match bin.operator.tok {
                     TokenType::AND => {
                         if let Primitive::Bool(bool1) = left && let Primitive::Bool(bool2) = right {
@@ -247,9 +248,10 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                 TokenType::IDENTIFIER => unsafe {
                     match stmt.inner {
                         Some(value) => {
-                            let primtive = self.evaluate(&value)?.clone();
+                            let primitive = self.evaluate(&value)?.clone();
+
                             self.globals
-                                .redefine(&stmt.ident.unwrap_unchecked().lexeme, primtive)?;
+                                .redefine(&stmt.ident.unwrap_unchecked().lexeme, primitive)?;
                             return Ok(Primitive::None);
                         }
                         None => {
@@ -282,7 +284,8 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                     }
                                 }
 
-                                self.globals = *func_scope.enclosing.unwrap_unchecked();
+                                self.globals = *self.globals.enclosing.clone().unwrap_unchecked();
+                                
                                 return Ok(Primitive::None);
                             }
                             None => {

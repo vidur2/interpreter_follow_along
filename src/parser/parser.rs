@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::{
     ast::expr_types::{Binary, ExprPossibilities, Grouping, Literal, Scope, Stmt, Ternary, Unary},
     error_reporting::{error_reporter::Unwindable, parsing_err::ParsingException},
-    scanner::token::{Token, TokenType, Primitive},
+    scanner::token::{Primitive, Token, TokenType},
 };
 
 #[derive(Clone)]
@@ -43,7 +43,9 @@ impl Parser {
 
             self.imports.insert(ident.lexeme);
             self.match_tok(&[TokenType::SEMICOLON]);
-            return Ok(ExprPossibilities::Literal(Literal { literal: Primitive::None }))
+            return Ok(ExprPossibilities::Literal(Literal {
+                literal: Primitive::None,
+            }));
         }
 
         return self.func_def();
@@ -384,9 +386,8 @@ impl Parser {
                 let expr = self.expression()?;
                 // return Ok(ExprPossibilities::Binary(Binary { left: ident, right: Box::new(expr), operator: operator.clone() }));
             }
-
         }
-        return Err(ParsingException::PlaceHolder)
+        return Err(ParsingException::PlaceHolder);
     }
 
     fn chain_bool(&mut self) -> Result<ExprPossibilities, ParsingException> {
