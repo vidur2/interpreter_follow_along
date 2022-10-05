@@ -1,0 +1,30 @@
+decenv list = {
+    let val = 5;
+    let next = null;
+}
+
+func push(list, val_new) {
+    env list {
+        if next == null {
+            decenv next_val = {
+                let val = val_new;
+                let next = null;
+            }
+            next = next_val;
+        } else {
+            next = push(next, val_new)
+        }
+    }
+
+    return list;
+}
+
+func printList(list) {
+    env list {
+        println(val);
+        if next != null {
+            return printList(next);
+        }
+    }
+}
+
