@@ -10,6 +10,7 @@ func push(list, val_new) {
                 let val = val_new;
                 let next = null;
             }
+
             next = next_val;
         } else {
             next = push(next, val_new)
@@ -28,3 +29,7 @@ func printList(list) {
     }
 }
 
+push(list, 5)
+push(list, 100);
+
+printList(list);

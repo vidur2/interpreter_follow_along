@@ -1,0 +1,14 @@
+func bar() {
+    foo = foo + 1;
+}
+
+decenv example = {
+    let foo = 10;
+    let bar = bar;
+}
+
+env example {
+    bar();
+    bar();
+    println(foo);
+}

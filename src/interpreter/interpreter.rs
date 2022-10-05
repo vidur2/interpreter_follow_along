@@ -283,8 +283,16 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                         return Ok(prim);
                                     }
                                 }
+
+                                let mut enc = *self.globals.enclosing.clone().unwrap_unchecked().clone();
+
+                                for key in enc.clone().vars.keys() {
+                                    let value = self.globals.retrieve(key).unwrap_unchecked();
+                                    enc.define(key, value);
+                                }
                                 
-                                self.globals = *func_scope.enclosing.clone().unwrap_unchecked();
+                                
+                                self.globals = enc;
                                 
                                 return Ok(Primitive::None);
                             }
@@ -386,7 +394,9 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
 
                                 self.globals = *env.enclosing.unwrap_unchecked();
 
+
                                 self.globals.define_env(&clos_ident, env.vars);
+
                                 return Ok(Primitive::None);
                             } else {
                                 return Err(InterpException::PlaceHolder);
