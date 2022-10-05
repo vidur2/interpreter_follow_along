@@ -283,13 +283,13 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                         return Ok(prim);
                                     }
                                 }
-
-                                self.globals = *self.globals.enclosing.clone().unwrap_unchecked();
+                                
+                                self.globals = *func_scope.enclosing.clone().unwrap_unchecked();
                                 
                                 return Ok(Primitive::None);
                             }
                             None => {
-                                self.globals = *func_scope.enclosing.unwrap_unchecked();
+                                self.globals = *self.globals.enclosing.clone().unwrap_unchecked();
                                 return Err(InterpException::PlaceHolder);
                             }
                         }
@@ -394,7 +394,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                         }
                     }
                     TokenType::IF => {
-                        let env = self.enclose();
+                        let _ = self.enclose();
                         for line in scope.inner.iter() {
                             let prim = self.evaluate(&line)?;
                             if prim != Primitive::None {
@@ -403,13 +403,13 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                         }
 
                         unsafe {
-                            self.globals = *env.enclosing.unwrap_unchecked();
+                            self.globals = *self.globals.enclosing.clone().unwrap_unchecked();
                             return Ok(Primitive::None);
                         }
                     }
 
                     TokenType::WHILE => {
-                        let env = self.enclose();
+                        let _ = self.enclose();
                         unsafe {
                             while let Primitive::Bool(true) =
                                 self.evaluate(&scope.clone().condition.unwrap_unchecked())?
@@ -421,12 +421,12 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                     }
                                 }
                             }
-                            self.globals = *env.enclosing.unwrap_unchecked();
+                            self.globals = *self.globals.enclosing.clone().unwrap_unchecked();
                         }
                         return Ok(Primitive::None);
                     }
                     TokenType::FOR => {
-                        let env = self.enclose();
+                        let _ = self.enclose();
                         unsafe {
                             let cond = *scope.condition.unwrap_unchecked().clone();
                             if let ExprPossibilities::Grouping(group) = cond {
@@ -443,7 +443,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                 }
                             }
 
-                            self.globals = *env.enclosing.unwrap_unchecked();
+                            self.globals = *self.globals.clone().enclosing.unwrap_unchecked();
                         }
 
                         return Ok(Primitive::None);

@@ -175,7 +175,7 @@ impl Parser {
     ) -> Result<ExprPossibilities, ParsingException> {
         let mut expr_list: Vec<ExprPossibilities> = Vec::new();
         while !self.match_tok(&[TokenType::RIGHT_BRACE]) {
-            let expr = self.while_loop()?;
+            let expr = self.func_def()?;
             expr_list.push(expr)
         }
 
