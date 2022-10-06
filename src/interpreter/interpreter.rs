@@ -431,7 +431,15 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                     }
                                 }
                             }
-                            self.globals = *self.globals.enclosing.clone().unwrap_unchecked();
+
+                            let mut enc = *self.globals.enclosing.clone().unwrap_unchecked().clone();
+
+                            for key in enc.clone().vars.keys() {
+                                let value = self.globals.retrieve(key).unwrap_unchecked();
+                                enc.define(key, value);
+                            }
+
+                            self.globals = enc;
                         }
                         return Ok(Primitive::None);
                     }

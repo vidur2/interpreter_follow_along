@@ -4,20 +4,24 @@ decenv list = {
 }
 
 func push(list, val_new) {
-    env list {
-        if next == null {
-            decenv next_val = {
-                let val = val_new;
-                let next = null;
-            }
+    let is_end = false;
 
-            next = next_val;
-        } else {
-            next = push(next, val_new)
+    while !is_end {
+        env list {
+            if next != null {
+                list = next;
+            } else {
+                decenv next_env = {
+                    let val = val_new;
+                    let next = null;
+                }
+
+                println("Shit");
+                next = next_env;
+                is_end = true;
+            }
         }
     }
-
-    return list;
 }
 
 func printList(list) {
