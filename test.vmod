@@ -1,0 +1,15 @@
+decenv test = {
+    let x = 5;
+}
+
+env test {
+    let i = 5;
+    while i < 8 {
+        x = x * 5;
+        i = i + 1;
+    }
+}
+
+env test {
+    println(x);
+}

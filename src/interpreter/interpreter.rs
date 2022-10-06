@@ -284,16 +284,19 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                     }
                                 }
 
-                                let mut enc = *self.globals.enclosing.clone().unwrap_unchecked().clone();
+                                let mut enc = self.globals.enclosing.clone().unwrap_unchecked().clone();
 
                                 for key in enc.clone().vars.keys() {
                                     let value = self.globals.retrieve(key).unwrap_unchecked();
-                                    enc.define(key, value);
+                                    if let Primitive::Env(env) = value {
+                                        enc.define_env(key, env.vars);
+                                    } else {
+                                        enc.define(key, value);
+                                    }
                                 }
                                 
                                 
-                                self.globals = enc;
-                                
+                                self.globals = *enc;
                                 return Ok(Primitive::None);
                             }
                             None => {
@@ -392,7 +395,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                     }
                                 }
 
-                                self.globals = *env.enclosing.unwrap_unchecked();
+                                self.globals = *self.globals.enclosing.clone().unwrap_unchecked();
 
 
                                 self.globals.define_env(&clos_ident, env.vars);
@@ -432,15 +435,20 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                 }
                             }
 
-                            let mut enc = *self.globals.enclosing.clone().unwrap_unchecked().clone();
+                            let mut enc = self.globals.enclosing.clone().unwrap_unchecked();
 
                             for key in enc.clone().vars.keys() {
                                 let value = self.globals.retrieve(key).unwrap_unchecked();
-                                enc.define(key, value);
+                                if let Primitive::Env(env) = value {
+                                    enc.define_env(key, env.vars);
+                                } else {
+                                    enc.define(key, value);
+                                }
                             }
 
-                            self.globals = enc;
+                            self.globals = *enc;
                         }
+
                         return Ok(Primitive::None);
                     }
                     TokenType::FOR => {
