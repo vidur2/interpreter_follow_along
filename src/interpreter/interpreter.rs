@@ -205,6 +205,16 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                 }
             }
             ExprPossibilities::Stmt(stmt) => match stmt.stmt {
+                TokenType::LEFT_SQUARE => unsafe {
+                    let value = self.globals.retrieve(&stmt.ident.as_ref().unwrap_unchecked().lexeme)?.clone();
+                    if let Primitive::List(vec) = value && let Some(ExprPossibilities::Literal(lit)) = stmt.inner.as_deref() {
+                        if let Primitive::Int(int) = lit.literal {
+                            return Ok(vec[int as usize].clone());
+                        }
+                    }
+
+                    return Err(InterpException::IdentifierNoExist(stmt.ident.unwrap_unchecked().to_string()));
+                }
                 TokenType::RETURN => unsafe {
                     let expr = *stmt.inner.unwrap_unchecked();
                     return self.evaluate(&expr);
@@ -218,6 +228,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                         Primitive::Bool(boolean) => print!("{}", boolean),
                         Primitive::Env(env) => print!("{:?}", env),
                         Primitive::None => print!("null"),
+                        Primitive::List(vec) => print!("{:?}", vec),
                         Primitive::Func(_) => return Err(InterpException::PlaceHolder),
                     }
 
@@ -233,6 +244,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                             Primitive::Bool(boolean) => println!("{}", boolean),
                             Primitive::Env(env) => println!("{:?}", env),
                             Primitive::None => println!("null"),
+                            Primitive::List(vec) => println!("{:?}", vec),
                             Primitive::Func(_) => return Err(InterpException::PlaceHolder),
                         }
                     }
@@ -332,6 +344,14 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
 
             crate::ast::expr_types::ExprPossibilities::Scope(scope) => {
                 match scope.stmt {
+                    TokenType::LEFT_SQUARE => {
+                        let mut ret_vec: Vec<Primitive> = Vec::new();
+                        for var in scope.inner.iter() {
+                            ret_vec.push(self.evaluate(var)?);
+                        }
+
+                        return Ok(Primitive::List(ret_vec));
+                    }
                     TokenType::FUNC => unsafe {
                         let close_ident = scope.ident.clone().unwrap_unchecked().clone();
                         if let Ok(Primitive::Func(func)) =

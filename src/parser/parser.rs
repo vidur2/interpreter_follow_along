@@ -520,6 +520,18 @@ impl Parser {
             }));
         }
 
+        if self.match_tok(&[TokenType::LEFT_SQUARE]) {
+            let mut scope_vec: Vec<ExprPossibilities> = Vec::new();
+            while !self.match_tok(&[TokenType::RIGHT_SQUARE]) {
+                scope_vec.push(self.chain_bool()?);
+                if self.peek().tok != TokenType::RIGHT_SQUARE {
+                    self.consume(&[TokenType::COMMA], ParsingException::InvalidExpr(self.peek().clone()))?;
+                }
+            }
+            self.consume(&[TokenType::SEMICOLON], ParsingException::InvalidExpr(self.peek().clone()));
+            return Ok(ExprPossibilities::Scope(Scope { stmt: TokenType::LEFT_SQUARE, ident: None, condition: None, params: None, inner: scope_vec }));
+        }
+
         if self.match_tok(&[TokenType::IDENTIFIER]) {
             let ident = self.previous().clone();
             if self.match_tok(&[TokenType::LEFT_PAREN]) {
@@ -551,6 +563,11 @@ impl Parser {
                     inner: Some(Box::new(expr)),
                     params: None,
                 }));
+            } else if self.match_tok(&[TokenType::LEFT_SQUARE]) {
+                let index = self.consume(&[TokenType::INTEGER], ParsingException::InvalidIndex(self.peek().clone()))?.clone();
+                self.consume(&[TokenType::RIGHT_SQUARE], ParsingException::InvalidIndex(self.peek().clone()))?;
+                self.consume(&[TokenType::SEMICOLON], ParsingException::InvalidExpr(self.peek().clone()));
+                return Ok(ExprPossibilities::Stmt(Stmt { stmt: TokenType::LEFT_SQUARE, ident: Some(ident), inner: Some(Box::new(ExprPossibilities::Literal(Literal { literal: index.literal.clone().unwrap() }))), params: None }))
             }
             return Ok(ExprPossibilities::Stmt(Stmt {
                 stmt: TokenType::IDENTIFIER,

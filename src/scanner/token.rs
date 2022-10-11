@@ -187,6 +187,7 @@ pub enum Primitive {
     Bool(bool),
     Env(Environment),
     Func(Func),
+    List(Vec<Primitive>),
     None,
 }
 
