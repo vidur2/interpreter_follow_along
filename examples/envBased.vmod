@@ -8,7 +8,10 @@ decenv example = {
 }
 
 env example {
-    bar();
-    bar();
+    let x = 0;
+    while x < 5{
+        bar()
+        x = x + 1;
+    }
     println(foo);
 }

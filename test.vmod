@@ -3,13 +3,13 @@ decenv test = {
 }
 
 env test {
-    let i = 5;
-    while i < 8 {
+    for (let i = 0; i < 5; i = i + 1) {
         x = x + 9;
-        i = i + 1;
     }
 }
 
-env test {
-    println(x);
+func test2() {
+    println("thing");
 }
+
+test2();
