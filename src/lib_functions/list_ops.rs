@@ -9,3 +9,7 @@ pub fn set(list: &mut Vec<Primitive>, idx: Primitive, primitive: Primitive) {
         list[idx_uw as usize] = primitive; 
     }
 }
+
+pub fn len(list: &Vec<Primitive>) -> Primitive {
+    return Primitive::Int(list.len() as isize);
+}
