@@ -226,6 +226,7 @@ impl Parser {
                 let idx = self.expression()?;
                 self.consume(&[TokenType::RIGHT_SQUARE], ParsingException::InvalidIndex(self.previous().clone()))?;
                 if self.match_tok(&[TokenType::EQUAL]) {
+                    todo!();
                     return Ok(ExprPossibilities::Stmt(Stmt { stmt: TokenType::FUNC, ident: Some(Token { tok: TokenType::IDENTIFIER, lexeme: String::from("set"), line: self.peek().line, literal: None }), inner: None, params: Some(Box::new(vec![idx, self.func_def()?])) }))
                 }
             }
