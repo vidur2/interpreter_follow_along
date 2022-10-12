@@ -260,6 +260,19 @@ impl Parser {
         return self.ternary();
     }
 
+    // fn append(&mut self) -> Result<ExprPossibilities, ParsingException> {
+    //     self.consume(&[TokenType::LEFT_PAREN], ParsingException::InvalidAppend(self.peek().clone()))?;
+    //     let mut params = Vec::new();
+    //     while !self.match_tok(&[TokenType::RIGHT_PAREN]) {
+    //         params.push(self.chain_bool()?);
+    //         if self.peek().tok != TokenType::RIGHT_PAREN {
+    //             self.consume(&[TokenType::COMMA], ParsingException::InvalidAppend(self.peek().clone()))?;
+    //         }
+    //     }
+
+    //     return Ok(ExprPossibilities::Stmt(Stmt { stmt: TokenType::APPEND, ident: None, inner: None, params: Some(Box::new(params)) }))
+    // }
+
     fn if_stmt(&mut self) -> Result<ExprPossibilities, ParsingException> {
         let condition = self.chain_bool()?;
         self.consume(

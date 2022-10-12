@@ -8,6 +8,7 @@ mod import_sys;
 mod interpreter;
 mod parser;
 mod scanner;
+mod lib_functions;
 
 use std::{collections::VecDeque, env};
 

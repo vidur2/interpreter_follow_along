@@ -17,6 +17,7 @@ pub enum ParsingException {
     InvalidEnvCall(Token),
     InvalidLoop(Token),
     InvalidIndex(Token),
+    InvalidAppend(Token),
     PlaceHolder,
 }
 
@@ -34,6 +35,7 @@ impl Unwindable for ParsingException {
                 "Parsing Error: Invalid Ternary Expression on line: {}",
                 tok.line - 1
             ),
+            Self::InvalidAppend(tok) => format!("Invalid call of append on line {}", tok.line),
             Self::InvalidIndex(tok) => format!("Parsing Error: Invalid Index on line {}", tok.line),
             ParsingException::PlaceHolder => {
                 String::from("Parsing Error: Limitation of rust borrow checker")
