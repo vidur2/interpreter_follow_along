@@ -222,7 +222,7 @@ impl Parser {
                     )?;
                 }
                 return Ok(initializer);
-            } else if  self.check_line(TokenType::EQUAL) && self.match_tok(&[TokenType::LEFT_SQUARE]){
+            } else if self.check_line(TokenType::EQUAL) && self.match_tok(&[TokenType::LEFT_SQUARE]){
                 let idx = self.expression()?;
                 self.consume(&[TokenType::RIGHT_SQUARE], ParsingException::InvalidIndex(self.previous().clone()))?;
                 if self.match_tok(&[TokenType::EQUAL]) {

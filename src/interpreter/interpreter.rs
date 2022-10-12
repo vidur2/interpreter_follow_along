@@ -209,8 +209,10 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                     let value = self.globals.retrieve(&stmt.ident.as_ref().unwrap_unchecked().lexeme)?.clone();
                     if let Primitive::List(vec) = value {
                         let idx = self.evaluate(stmt.inner.as_deref().unwrap_unchecked())?;
-                        if let Primitive::Int(int) = idx {
+                        if let Primitive::Int(int) = idx && (int as usize) < vec.len() {
                             return Ok(vec[int as usize].clone());
+                        } else {
+                            return Ok(Primitive::None);
                         }
                     }
 
@@ -256,7 +258,9 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                     let expr = self.evaluate(&stmt.inner.unwrap_unchecked())?;
                     if let Primitive::List(list) = expr {
                         let mut vars = HashMap::new();
-                        vars.insert(String::from("list"), Primitive::List(list));
+                        let ident = stmt.ident.clone().unwrap_unchecked().lexeme;
+                        vars.insert(String::from("list"), Primitive::String(ident.clone()));
+                        vars.insert(String::from(ident), Primitive::List(list));
                         vars.insert(String::from("set"), Primitive::NativeFunc(LibFunctions::Set));
                         vars.insert(String::from("append"), Primitive::NativeFunc(LibFunctions::Append));
                         self.globals.define_env(&stmt.ident.unwrap_unchecked().lexeme, vars);
@@ -329,13 +333,15 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                         let params = &stmt.params.unwrap_unchecked();
                         match func {
                             LibFunctions::Append => {
-                                let list = self.globals.retrieve("list")?;
-                                if let Primitive::List(mut list_uw) = list {
-                                    for param in params.iter() {
-                                        append(&mut list_uw, self.evaluate(&param)?);
+                                if let Primitive::String(ident) = self.globals.retrieve("list")? {
+                                    let list = self.globals.retrieve(&ident)?;
+                                    if let Primitive::List(mut list_uw) = list {
+                                        for param in params.iter() {
+                                            append(&mut list_uw, self.evaluate(&param)?);
+                                        }
+                                        self.globals.redefine(&ident, Primitive::List(list_uw))?;
                                     }
-                                    self.globals.define("list", Primitive::List(list_uw))
-                                }
+                                };
                             },
                             LibFunctions::Set => {
                                 let list = self.globals.retrieve("list")?;
