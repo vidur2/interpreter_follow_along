@@ -14,6 +14,7 @@ pub enum InterpException {
     DivideByZero(Binary),
     InvalidTernaryExpr(u64),
     IdentifierNoExist(String),
+    InvalidIndex(String),
     PlaceHolder,
 }
 
@@ -44,6 +45,9 @@ impl Unwindable for InterpException {
             }
             InterpException::IdentifierNoExist(ident) => {
                 format!("Identifier '{}' does not exist", ident)
+            }
+            InterpException::InvalidIndex(list) => {
+                format!("Invalid indexing of list {}", list)
             }
             InterpException::DivideByZero(_) => todo!(),
         }

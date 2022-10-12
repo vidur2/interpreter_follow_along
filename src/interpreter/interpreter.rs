@@ -8,7 +8,7 @@ use crate::{
     error_reporting::{
         error_reporter::Unwindable, interp_err::InterpException, parsing_err::ParsingException,
     },
-    scanner::token::{Func, Primitive, TokenType}, lib_functions::{LibFunctions, list_ops::append},
+    scanner::token::{Func, Primitive, TokenType}, lib_functions::{LibFunctions, list_ops::{append, set}},
 };
 
 use super::environment::Environment;
@@ -207,8 +207,9 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
             ExprPossibilities::Stmt(stmt) => match stmt.stmt {
                 TokenType::LEFT_SQUARE => unsafe {
                     let value = self.globals.retrieve(&stmt.ident.as_ref().unwrap_unchecked().lexeme)?.clone();
-                    if let Primitive::List(vec) = value && let Some(ExprPossibilities::Literal(lit)) = stmt.inner.as_deref() {
-                        if let Primitive::Int(int) = lit.literal {
+                    if let Primitive::List(vec) = value {
+                        let idx = self.evaluate(stmt.inner.as_deref().unwrap_unchecked())?;
+                        if let Primitive::Int(int) = idx {
                             return Ok(vec[int as usize].clone());
                         }
                     }
@@ -256,6 +257,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                     if let Primitive::List(list) = expr {
                         let mut vars = HashMap::new();
                         vars.insert(String::from("list"), Primitive::List(list));
+                        vars.insert(String::from("set"), Primitive::NativeFunc(LibFunctions::Set));
                         vars.insert(String::from("append"), Primitive::NativeFunc(LibFunctions::Append));
                         self.globals.define_env(&stmt.ident.unwrap_unchecked().lexeme, vars);
                     } else {
@@ -324,14 +326,24 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                             }
                         }
                     } else if let Primitive::NativeFunc(func) = func_data {
+                        let params = &stmt.params.unwrap_unchecked();
                         match func {
                             LibFunctions::Append => {
                                 let list = self.globals.retrieve("list")?;
                                 if let Primitive::List(mut list_uw) = list {
-                                    append(&mut list_uw, self.evaluate(&stmt.params.unwrap_unchecked()[0])?);
+                                    for param in params.iter() {
+                                        append(&mut list_uw, self.evaluate(&param)?);
+                                    }
                                     self.globals.define("list", Primitive::List(list_uw))
                                 }
                             },
+                            LibFunctions::Set => {
+                                let list = self.globals.retrieve("list")?;
+                                if let Primitive::List(mut list_uw) = list && params.len() == 2 {
+                                    set(&mut list_uw, self.evaluate(&params[0])?, self.evaluate(&params[1])?);
+                                    self.globals.define("list", Primitive::List(list_uw));
+                                }
+                            }
                         }
                         return Ok(Primitive::None);
                     } else {

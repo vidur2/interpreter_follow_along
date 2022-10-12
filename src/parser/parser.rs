@@ -222,9 +222,28 @@ impl Parser {
                     )?;
                 }
                 return Ok(initializer);
+            } else if  self.check_line(TokenType::EQUAL) && self.match_tok(&[TokenType::LEFT_SQUARE]){
+                let idx = self.expression()?;
+                self.consume(&[TokenType::RIGHT_SQUARE], ParsingException::InvalidIndex(self.previous().clone()))?;
+                if self.match_tok(&[TokenType::EQUAL]) {
+                    return Ok(ExprPossibilities::Stmt(Stmt { stmt: TokenType::FUNC, ident: Some(Token { tok: TokenType::IDENTIFIER, lexeme: String::from("set"), line: self.peek().line, literal: None }), inner: None, params: Some(Box::new(vec![idx, self.func_def()?])) }))
+                }
             }
         }
         return Err(ParsingException::InvalidAssign(self.previous().clone()));
+    }
+
+    fn check_line(&self, tok_type: TokenType) -> bool {
+        let mut offset = 1;
+        let line = self.peek().line;
+        while self.tokens[self.current + offset].line == line {
+            if tok_type == self.tokens[self.current + offset].tok {
+                return true;
+            }
+            offset += 1;
+        }
+
+        return false;
     }
 
     fn statement(&mut self) -> Result<ExprPossibilities, ParsingException> {
@@ -577,10 +596,10 @@ impl Parser {
                     params: None,
                 }));
             } else if self.match_tok(&[TokenType::LEFT_SQUARE]) {
-                let index = self.consume(&[TokenType::INTEGER], ParsingException::InvalidIndex(self.peek().clone()))?.clone();
+                let index = self.chain_bool()?;
                 self.consume(&[TokenType::RIGHT_SQUARE], ParsingException::InvalidIndex(self.peek().clone()))?;
                 self.consume(&[TokenType::SEMICOLON], ParsingException::InvalidExpr(self.peek().clone()));
-                return Ok(ExprPossibilities::Stmt(Stmt { stmt: TokenType::LEFT_SQUARE, ident: Some(ident), inner: Some(Box::new(ExprPossibilities::Literal(Literal { literal: index.literal.clone().unwrap() }))), params: None }))
+                return Ok(ExprPossibilities::Stmt(Stmt { stmt: TokenType::LEFT_SQUARE, ident: Some(ident), inner: Some(Box::new(index)), params: None }))
             }
             return Ok(ExprPossibilities::Stmt(Stmt {
                 stmt: TokenType::IDENTIFIER,
