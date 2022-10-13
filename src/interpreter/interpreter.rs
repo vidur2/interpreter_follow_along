@@ -19,8 +19,10 @@ pub struct Interpreter {
 
 impl Interpreter {
     pub fn new() -> Self {
+        let mut globals = Environment::new();
+        globals.define("len", Primitive::NativeFunc(LibFunctions::Len));
         return Self {
-            globals: Environment::new(),
+            globals,
         };
     }
 
@@ -354,12 +356,13 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                 };
                             },
                             LibFunctions::Len => {
-                                if let Primitive::String(ident) = self.globals.retrieve("list")? {
-                                    let list = self.globals.retrieve(&ident)?;
-                                    if let Primitive::List(list_uw) = list {
+                                if params.len() == 1 {
+                                    if let Primitive::Env(env) = self.evaluate(&params[0])? && let Primitive::String(string) = env.retrieve("list")? && let Primitive::List(list_uw) = env.retrieve(&string)? {
                                         return Ok(len(&list_uw));
+                                    } else if let Primitive::List(list) = self.evaluate(&params[0])? {
+                                        return Ok(len(&list))
                                     }
-                                };
+                                }
                             }
                         }
                         return Ok(Primitive::None);
