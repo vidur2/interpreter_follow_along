@@ -6,5 +6,6 @@ pub mod list_ops;
 pub enum LibFunctions{
     Append,
     Set,
-    Len
+    Len,
+    Slice
 }

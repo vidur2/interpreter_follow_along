@@ -13,3 +13,7 @@ pub fn set(list: &mut Vec<Primitive>, idx: Primitive, primitive: Primitive) {
 pub fn len(list: &Vec<Primitive>) -> Primitive {
     return Primitive::Int(list.len() as isize);
 }
+
+pub fn slice(list: &Vec<Primitive>, index1: usize, index2: usize) -> Vec<Primitive> {
+    return list[index1..index2].to_vec();
+}

@@ -8,7 +8,7 @@ use crate::{
     error_reporting::{
         error_reporter::Unwindable, interp_err::InterpException, parsing_err::ParsingException,
     },
-    scanner::token::{Func, Primitive, TokenType}, lib_functions::{LibFunctions, list_ops::{append, set, len}},
+    scanner::token::{Func, Primitive, TokenType}, lib_functions::{LibFunctions, list_ops::{append, set, len, slice}},
 };
 
 use super::environment::Environment;
@@ -257,16 +257,9 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                     return Ok(Primitive::None);
                 }
                 TokenType::LET => unsafe {
-                    let expr = self.evaluate(&stmt.inner.unwrap_unchecked())?;
+                    let expr = self.evaluate(&stmt.inner.clone().unwrap_unchecked())?;
                     if let Primitive::List(list) = expr {
-                        let mut vars = HashMap::new();
-                        let ident = stmt.ident.clone().unwrap_unchecked().lexeme;
-                        vars.insert(String::from("list"), Primitive::String(ident.clone()));
-                        vars.insert(String::from(ident), Primitive::List(list));
-                        vars.insert(String::from("set"), Primitive::NativeFunc(LibFunctions::Set));
-                        vars.insert(String::from("len"), Primitive::NativeFunc(LibFunctions::Len));
-                        vars.insert(String::from("append"), Primitive::NativeFunc(LibFunctions::Append));
-                        self.globals.define_env(&stmt.ident.unwrap_unchecked().lexeme, vars);
+                        self.define_list(&stmt.clone(), list);
                     } else {
                         self.globals
                             .define(&stmt.ident.unwrap_unchecked().lexeme, expr);
@@ -362,6 +355,20 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                     } else if let Primitive::List(list) = self.evaluate(&params[0])? {
                                         return Ok(len(&list))
                                     }
+                                }
+                            },
+                            LibFunctions::Slice => {
+                                if params.len() == 2 {
+                                    if let Primitive::String(ident) = self.globals.retrieve("list")? {
+                                        let list = self.globals.retrieve(&ident)?;
+                                        if let Primitive::List(mut list_uw) = list {
+                                            if let Primitive::Int(idx1) = self.evaluate(&params[0])? && let Primitive::Int(idx2) = self.evaluate(&params[1])? {
+                                                let vec = slice(&mut list_uw, idx1 as usize, idx2 as usize);
+                                                self.globals.redefine(&ident, Primitive::List(list_uw))?;
+                                                return Ok(Primitive::List(vec));
+                                            }
+                                        }
+                                    };
                                 }
                             }
                         }
@@ -547,6 +554,20 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                 }
             }
         }
+    }
+}
+
+impl Interpreter {
+    unsafe fn define_list(&mut self, stmt: &crate::ast::expr_types::Stmt, list: Vec<Primitive>) {
+        let mut vars = HashMap::new();
+        let ident = stmt.ident.clone().unwrap_unchecked().lexeme;
+        vars.insert(String::from("list"), Primitive::String(ident.clone()));
+        vars.insert(String::from(ident), Primitive::List(list));
+        vars.insert(String::from("set"), Primitive::NativeFunc(LibFunctions::Set));
+        vars.insert(String::from("len"), Primitive::NativeFunc(LibFunctions::Len));
+        vars.insert(String::from("append"), Primitive::NativeFunc(LibFunctions::Append));
+        vars.insert(String::from("slice"), Primitive::NativeFunc(LibFunctions::Slice));
+        self.globals.define_env(&stmt.ident.clone().unwrap_unchecked().lexeme, vars);
     }
 }
 
