@@ -7,7 +7,7 @@ use crate::{
     scanner::{
         scanner::Scanner,
         token::{Func, Token, TokenType},
-    },
+    }, lib_functions::BUILTINS,
 };
 
 pub struct Importer {
@@ -22,7 +22,16 @@ impl Importer {
     }
 
     pub fn import_files(&mut self, files: HashSet<String>, global_interp: &mut Interpreter) {
+        let mut files = files;
         let paths = std::fs::read_dir("./").unwrap();
+
+        for builtin in BUILTINS.iter() {
+            if files.contains(&builtin.to_string()) {
+                files.remove(&builtin.to_string());
+                let env = crate::lib_functions::import_lib(&builtin);
+                global_interp.globals.define_env(builtin, env.vars);
+            }
+        }
 
         for path in paths {
             let mut interpreter = Interpreter::new();

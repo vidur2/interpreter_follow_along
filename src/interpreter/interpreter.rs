@@ -8,7 +8,7 @@ use crate::{
     error_reporting::{
         error_reporter::Unwindable, interp_err::InterpException, parsing_err::ParsingException,
     },
-    scanner::token::{Func, Primitive, TokenType}, lib_functions::{LibFunctions, list_ops::{append, set, len, slice}},
+    scanner::token::{Func, Primitive, TokenType}, lib_functions::{LibFunctions, list_ops::{append, set, len, slice}, math::Math},
 };
 
 use super::environment::Environment;
@@ -370,6 +370,10 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                         }
                                     };
                                 }
+                            }
+                            LibFunctions::Math(var) => {
+                                let params_parsed: Vec<Result<Primitive, InterpException>> = params.as_ref().iter().map(|val|{self.evaluate(val)}).collect();
+                                return Math::do_func(var, params_parsed)
                             }
                         }
                         return Ok(Primitive::None);
