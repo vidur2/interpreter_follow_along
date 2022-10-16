@@ -1,8 +1,10 @@
 decenv test = {
-    let x = 5;
+    let x = "5";
 }
 
 env test {
+    println(x + 5);
+    x = int(x);
     for (let i = 0; i < 5; i = i + 1) {
         x = x + 9;
     }
@@ -12,4 +14,9 @@ func test2() {
     println("thing");
 }
 
-test2();
+env test {
+    let x = "5";
+    x = int(x) + 10;
+    x = str(x) + 100;
+    println(x);
+}

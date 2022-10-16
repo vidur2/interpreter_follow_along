@@ -1,0 +1,9 @@
+import envBased;
+
+env envBased {
+    env example {
+        bar();
+        bar();
+        println(foo);
+    }
+}

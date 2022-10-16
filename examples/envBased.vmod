@@ -6,12 +6,3 @@ decenv example = {
     let foo = 10;
     let bar = bar;
 }
-
-env example {
-    let x = 0;
-    while x < 5{
-        bar()
-        x = x + 1;
-    }
-    println(foo);
-}

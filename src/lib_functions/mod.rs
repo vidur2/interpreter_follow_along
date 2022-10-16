@@ -1,9 +1,10 @@
 use crate::interpreter::environment::Environment;
 
-use self::{list_ops::append, math::Math};
+use self::math::Math;
 
 pub mod list_ops;
 pub mod math;
+pub mod cast_ops;
 
 pub const BUILTINS: [&str; 1] = ["math"];
 
@@ -14,6 +15,9 @@ pub enum LibFunctions{
     Len,
     Slice,
     Math(MathLibFunctions),
+    Int,
+    Float,
+    String
 }
 
 

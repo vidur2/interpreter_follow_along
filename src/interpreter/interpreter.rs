@@ -21,6 +21,9 @@ impl Interpreter {
     pub fn new() -> Self {
         let mut globals = Environment::new();
         globals.define("len", Primitive::NativeFunc(LibFunctions::Len));
+        globals.define("int", Primitive::NativeFunc(LibFunctions::Int));
+        globals.define("float", Primitive::NativeFunc(LibFunctions::Float));
+        globals.define("str", Primitive::NativeFunc(LibFunctions::String));
         return Self {
             globals,
         };
@@ -375,6 +378,9 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                 let params_parsed: Vec<Result<Primitive, InterpException>> = params.as_ref().iter().map(|val|{self.evaluate(val)}).collect();
                                 return Math::do_func(var, params_parsed)
                             }
+                            LibFunctions::Int => return Ok(crate::lib_functions::cast_ops::int(self.evaluate(&params[0])?)),
+                            LibFunctions::String => return Ok(crate::lib_functions::cast_ops::string(self.evaluate(&params[0])?)),
+                            LibFunctions::Float => todo!(),
                         }
                         return Ok(Primitive::None);
                     } else {

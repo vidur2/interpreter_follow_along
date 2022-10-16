@@ -50,7 +50,7 @@ fn main() {
             }
         }
 
-        importer.import_files(parser.imports, &mut interpreter);
+        importer.import_files(parser.imports, &mut interpreter, args[1].clone());
 
         for expr in expressions.iter() {
             interpreter.interpret(expr);

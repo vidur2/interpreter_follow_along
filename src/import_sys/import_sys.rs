@@ -21,9 +21,17 @@ impl Importer {
         };
     }
 
-    pub fn import_files(&mut self, files: HashSet<String>, global_interp: &mut Interpreter) {
+    pub fn import_files(&mut self, files: HashSet<String>, global_interp: &mut Interpreter, base_filename: String) {
         let mut files = files;
-        let paths = std::fs::read_dir("./").unwrap();
+
+        let mut dir_string = String::new();
+        let mut split_dir: Vec<&str> = base_filename.split("/").collect();
+        split_dir.pop();
+
+        for dir in split_dir.iter() {
+            dir_string += (dir.to_string() + "/").as_str();
+        }
+        let paths = std::fs::read_dir("./".to_string() + &dir_string).unwrap();
 
         for builtin in BUILTINS.iter() {
             if files.contains(&builtin.to_string()) {
