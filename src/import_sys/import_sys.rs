@@ -1,4 +1,4 @@
-use std::collections::{HashSet, VecDeque};
+use std::{collections::{HashSet, VecDeque}, fs::ReadDir};
 
 use crate::{
     ast::expr_types::{ExprPossibilities, Literal, Scope, Stmt},
@@ -31,7 +31,8 @@ impl Importer {
         for dir in split_dir.iter() {
             dir_string += (dir.to_string() + "/").as_str();
         }
-        let paths = std::fs::read_dir("./".to_string() + &dir_string).unwrap();
+        let dir_paths = std::fs::read_dir("./".to_string() + &dir_string).unwrap();
+        let lib_path = std::env::current_exe().unwrap().parent().unwrap().as_os_str().to_str().unwrap().to_string() + "/vmod_lib";
 
         for builtin in BUILTINS.iter() {
             if files.contains(&builtin.to_string()) {
@@ -41,7 +42,7 @@ impl Importer {
             }
         }
 
-        for path in paths {
+        for path in dir_paths.chain(std::fs::read_dir(lib_path).unwrap()) {
             let mut interpreter = Interpreter::new();
             let path = path.unwrap().path().into_os_string().into_string().unwrap();
             let split_path: Vec<&str> = path.split("/").collect();

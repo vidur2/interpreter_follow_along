@@ -1,6 +1,7 @@
 #![feature(let_chains)]
 #![feature(const_for)]
 #![feature(const_mut_refs)]
+#![feature(iterator_try_collect)]
 
 mod ast;
 mod error_reporting;
