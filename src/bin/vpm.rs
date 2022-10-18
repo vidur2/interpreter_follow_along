@@ -4,6 +4,10 @@ use std::{
     net::TcpStream,
 };
 
+const HTTP_BODY: &str = "
+    
+";
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
