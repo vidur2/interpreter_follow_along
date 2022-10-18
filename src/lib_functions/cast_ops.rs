@@ -10,7 +10,7 @@ pub fn int(other: Primitive) -> Primitive {
                 Ok(val) => return Primitive::Int(val),
                 Err(_) => return Primitive::None,
             }
-        },
+        }
         Primitive::Bool(boolean) => return Primitive::Int(boolean as isize),
         Primitive::Env(_) => return Primitive::None,
         Primitive::Func(_) => return Primitive::None,

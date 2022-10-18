@@ -14,7 +14,7 @@ use std::{fmt::Display, io::Write};
 
 #[derive(Clone)]
 pub struct Scanner {
-    buff: String,
+    pub buff: String,
     pub token: Vec<Token>,
     has_error: bool,
     curr_line: usize,
@@ -61,7 +61,7 @@ impl Scanner {
         return self.token.clone();
     }
 
-    fn start_scanner() -> Self {
+    pub fn start_scanner() -> Self {
         return Self {
             buff: String::new(),
             token: Vec::new(),

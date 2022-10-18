@@ -2,14 +2,14 @@ use crate::interpreter::environment::Environment;
 
 use self::math::Math;
 
+pub mod cast_ops;
 pub mod list_ops;
 pub mod math;
-pub mod cast_ops;
 
 pub const BUILTINS: [&str; 1] = ["math"];
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
-pub enum LibFunctions{
+pub enum LibFunctions {
     Append,
     Set,
     Len,
@@ -17,18 +17,17 @@ pub enum LibFunctions{
     Math(MathLibFunctions),
     Int,
     Float,
-    String
+    String,
 }
-
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub enum MathLibFunctions {
     Sin,
     Cos,
-    Tan
+    Tan,
 }
 
-pub fn import_lib(import_name: &str) -> Environment{
+pub fn import_lib(import_name: &str) -> Environment {
     match import_name {
         "math" => {
             return Math::new();

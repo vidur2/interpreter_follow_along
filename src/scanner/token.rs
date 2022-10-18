@@ -8,7 +8,8 @@ use std::{
 use crate::{
     ast::expr_types::{Scope, Stmt},
     error_reporting::{error_reporter::Literal, scanning_err::ScanningException},
-    interpreter::environment::Environment, lib_functions::LibFunctions,
+    interpreter::environment::Environment,
+    lib_functions::LibFunctions,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -73,7 +74,7 @@ pub enum TokenType {
 
     ERROR,
 
-    EOF
+    EOF,
 }
 
 impl TokenType {

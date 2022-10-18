@@ -8,7 +8,12 @@ use crate::{
     error_reporting::{
         error_reporter::Unwindable, interp_err::InterpException, parsing_err::ParsingException,
     },
-    scanner::token::{Func, Primitive, TokenType}, lib_functions::{LibFunctions, list_ops::{append, set, len, slice}, math::Math},
+    lib_functions::{
+        list_ops::{append, len, set, slice},
+        math::Math,
+        LibFunctions,
+    },
+    scanner::token::{Func, Primitive, TokenType},
 };
 
 use super::environment::Environment;
@@ -24,9 +29,7 @@ impl Interpreter {
         globals.define("int", Primitive::NativeFunc(LibFunctions::Int));
         globals.define("float", Primitive::NativeFunc(LibFunctions::Float));
         globals.define("str", Primitive::NativeFunc(LibFunctions::String));
-        return Self {
-            globals,
-        };
+        return Self { globals };
     }
 
     pub fn interpret(&mut self, expr: &ExprPossibilities) {
@@ -211,7 +214,10 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
             }
             ExprPossibilities::Stmt(stmt) => match stmt.stmt {
                 TokenType::LEFT_SQUARE => unsafe {
-                    let value = self.globals.retrieve(&stmt.ident.as_ref().unwrap_unchecked().lexeme)?.clone();
+                    let value = self
+                        .globals
+                        .retrieve(&stmt.ident.as_ref().unwrap_unchecked().lexeme)?
+                        .clone();
                     if let Primitive::List(vec) = value {
                         let idx = self.evaluate(stmt.inner.as_deref().unwrap_unchecked())?;
                         if let Primitive::Int(int) = idx && (int as usize) < vec.len() {
@@ -221,8 +227,10 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                         }
                     }
 
-                    return Err(InterpException::IdentifierNoExist(stmt.ident.unwrap_unchecked().to_string()));
-                }
+                    return Err(InterpException::IdentifierNoExist(
+                        stmt.ident.unwrap_unchecked().to_string(),
+                    ));
+                },
                 TokenType::RETURN => unsafe {
                     let expr = *stmt.inner.unwrap_unchecked();
                     return self.evaluate(&expr);
@@ -308,7 +316,8 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                     }
                                 }
 
-                                let mut enc = self.globals.enclosing.clone().unwrap_unchecked().clone();
+                                let mut enc =
+                                    self.globals.enclosing.clone().unwrap_unchecked().clone();
 
                                 for key in enc.clone().vars.keys() {
                                     let value = self.globals.retrieve(key).unwrap_unchecked();
@@ -318,8 +327,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                         enc.define(key, value);
                                     }
                                 }
-                                
-                                
+
                                 self.globals = *enc;
                                 return Ok(Primitive::None);
                             }
@@ -341,16 +349,20 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                         self.globals.redefine(&ident, Primitive::List(list_uw))?;
                                     }
                                 };
-                            },
+                            }
                             LibFunctions::Set => {
                                 if let Primitive::String(ident) = self.globals.retrieve("list")? {
                                     let list = self.globals.retrieve(&ident)?;
                                     if let Primitive::List(mut list_uw) = list {
-                                        set(&mut list_uw, self.evaluate(&params[0])?, self.evaluate(&params[1])?);
+                                        set(
+                                            &mut list_uw,
+                                            self.evaluate(&params[0])?,
+                                            self.evaluate(&params[1])?,
+                                        );
                                         self.globals.redefine(&ident, Primitive::List(list_uw))?;
                                     }
                                 };
-                            },
+                            }
                             LibFunctions::Len => {
                                 if params.len() == 1 {
                                     if let Primitive::Env(env) = self.evaluate(&params[0])? && let Primitive::String(string) = env.retrieve("list")? && let Primitive::List(list_uw) = env.retrieve(&string)? {
@@ -359,10 +371,12 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                         return Ok(len(&list))
                                     }
                                 }
-                            },
+                            }
                             LibFunctions::Slice => {
                                 if params.len() == 2 {
-                                    if let Primitive::String(ident) = self.globals.retrieve("list")? {
+                                    if let Primitive::String(ident) =
+                                        self.globals.retrieve("list")?
+                                    {
                                         let list = self.globals.retrieve(&ident)?;
                                         if let Primitive::List(mut list_uw) = list {
                                             if let Primitive::Int(idx1) = self.evaluate(&params[0])? && let Primitive::Int(idx2) = self.evaluate(&params[1])? {
@@ -375,11 +389,23 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                 }
                             }
                             LibFunctions::Math(var) => {
-                                let params_parsed: Vec<Result<Primitive, InterpException>> = params.as_ref().iter().map(|val|{self.evaluate(val)}).collect();
-                                return Math::do_func(var, params_parsed)
+                                let params_parsed: Vec<Result<Primitive, InterpException>> = params
+                                    .as_ref()
+                                    .iter()
+                                    .map(|val| self.evaluate(val))
+                                    .collect();
+                                return Math::do_func(var, params_parsed);
                             }
-                            LibFunctions::Int => return Ok(crate::lib_functions::cast_ops::int(self.evaluate(&params[0])?)),
-                            LibFunctions::String => return Ok(crate::lib_functions::cast_ops::string(self.evaluate(&params[0])?)),
+                            LibFunctions::Int => {
+                                return Ok(crate::lib_functions::cast_ops::int(
+                                    self.evaluate(&params[0])?,
+                                ))
+                            }
+                            LibFunctions::String => {
+                                return Ok(crate::lib_functions::cast_ops::string(
+                                    self.evaluate(&params[0])?,
+                                ))
+                            }
                             LibFunctions::Float => todo!(),
                         }
                         return Ok(Primitive::None);
@@ -483,7 +509,6 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
 
                                 self.globals = *self.globals.enclosing.clone().unwrap_unchecked();
 
-
                                 self.globals.define_env(&clos_ident, env.vars);
 
                                 return Ok(Primitive::None);
@@ -573,11 +598,24 @@ impl Interpreter {
         let ident = stmt.ident.clone().unwrap_unchecked().lexeme;
         vars.insert(String::from("list"), Primitive::String(ident.clone()));
         vars.insert(String::from(ident), Primitive::List(list));
-        vars.insert(String::from("set"), Primitive::NativeFunc(LibFunctions::Set));
-        vars.insert(String::from("len"), Primitive::NativeFunc(LibFunctions::Len));
-        vars.insert(String::from("append"), Primitive::NativeFunc(LibFunctions::Append));
-        vars.insert(String::from("slice"), Primitive::NativeFunc(LibFunctions::Slice));
-        self.globals.define_env(&stmt.ident.clone().unwrap_unchecked().lexeme, vars);
+        vars.insert(
+            String::from("set"),
+            Primitive::NativeFunc(LibFunctions::Set),
+        );
+        vars.insert(
+            String::from("len"),
+            Primitive::NativeFunc(LibFunctions::Len),
+        );
+        vars.insert(
+            String::from("append"),
+            Primitive::NativeFunc(LibFunctions::Append),
+        );
+        vars.insert(
+            String::from("slice"),
+            Primitive::NativeFunc(LibFunctions::Slice),
+        );
+        self.globals
+            .define_env(&stmt.ident.clone().unwrap_unchecked().lexeme, vars);
     }
 }
 

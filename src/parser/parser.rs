@@ -222,11 +222,25 @@ impl Parser {
                     )?;
                 }
                 return Ok(initializer);
-            } else if self.check_line(TokenType::EQUAL) && self.match_tok(&[TokenType::LEFT_SQUARE]){
+            } else if self.check_line(TokenType::EQUAL) && self.match_tok(&[TokenType::LEFT_SQUARE])
+            {
                 let idx = self.expression()?;
-                self.consume(&[TokenType::RIGHT_SQUARE], ParsingException::InvalidIndex(self.previous().clone()))?;
+                self.consume(
+                    &[TokenType::RIGHT_SQUARE],
+                    ParsingException::InvalidIndex(self.previous().clone()),
+                )?;
                 if self.match_tok(&[TokenType::EQUAL]) {
-                    return Ok(ExprPossibilities::Stmt(Stmt { stmt: TokenType::FUNC, ident: Some(Token { tok: TokenType::IDENTIFIER, lexeme: String::from("set"), line: self.peek().line, literal: None }), inner: None, params: Some(Box::new(vec![idx, self.func_def()?])) }))
+                    return Ok(ExprPossibilities::Stmt(Stmt {
+                        stmt: TokenType::FUNC,
+                        ident: Some(Token {
+                            tok: TokenType::IDENTIFIER,
+                            lexeme: String::from("set"),
+                            line: self.peek().line,
+                            literal: None,
+                        }),
+                        inner: None,
+                        params: Some(Box::new(vec![idx, self.func_def()?])),
+                    }));
                 }
             }
         }
@@ -557,13 +571,24 @@ impl Parser {
             while !self.match_tok(&[TokenType::RIGHT_SQUARE]) {
                 scope_vec.push(self.chain_bool()?);
                 if self.peek().tok != TokenType::RIGHT_SQUARE {
-                    self.consume(&[TokenType::COMMA], ParsingException::InvalidExpr(self.peek().clone()))?;
+                    self.consume(
+                        &[TokenType::COMMA],
+                        ParsingException::InvalidExpr(self.peek().clone()),
+                    )?;
                 }
             }
 
-
-            self.consume(&[TokenType::SEMICOLON], ParsingException::InvalidExpr(self.peek().clone()));
-            return Ok(ExprPossibilities::Scope(Scope { stmt: TokenType::LEFT_SQUARE, ident: None, condition: None, params: None, inner: scope_vec }));
+            self.consume(
+                &[TokenType::SEMICOLON],
+                ParsingException::InvalidExpr(self.peek().clone()),
+            );
+            return Ok(ExprPossibilities::Scope(Scope {
+                stmt: TokenType::LEFT_SQUARE,
+                ident: None,
+                condition: None,
+                params: None,
+                inner: scope_vec,
+            }));
         }
 
         if self.match_tok(&[TokenType::IDENTIFIER]) {
@@ -599,12 +624,33 @@ impl Parser {
                 }));
             } else if self.match_tok(&[TokenType::LEFT_SQUARE]) {
                 let index = self.chain_bool()?;
-                self.consume(&[TokenType::RIGHT_SQUARE], ParsingException::InvalidIndex(self.peek().clone()))?;
-                self.consume(&[TokenType::SEMICOLON], ParsingException::InvalidExpr(self.peek().clone()));
+                self.consume(
+                    &[TokenType::RIGHT_SQUARE],
+                    ParsingException::InvalidIndex(self.peek().clone()),
+                )?;
+                self.consume(
+                    &[TokenType::SEMICOLON],
+                    ParsingException::InvalidExpr(self.peek().clone()),
+                );
                 if self.match_tok(&[TokenType::EQUAL]) {
-                    return Ok(ExprPossibilities::Stmt(Stmt { stmt: TokenType::FUNC, ident: Some(Token { tok: TokenType::IDENTIFIER, lexeme: String::from("set"), line: self.peek().line, literal: None }), inner: None, params: Some(Box::new(vec![index, self.func_def()?])) }))
+                    return Ok(ExprPossibilities::Stmt(Stmt {
+                        stmt: TokenType::FUNC,
+                        ident: Some(Token {
+                            tok: TokenType::IDENTIFIER,
+                            lexeme: String::from("set"),
+                            line: self.peek().line,
+                            literal: None,
+                        }),
+                        inner: None,
+                        params: Some(Box::new(vec![index, self.func_def()?])),
+                    }));
                 }
-                return Ok(ExprPossibilities::Stmt(Stmt { stmt: TokenType::LEFT_SQUARE, ident: Some(ident), inner: Some(Box::new(index)), params: None }))
+                return Ok(ExprPossibilities::Stmt(Stmt {
+                    stmt: TokenType::LEFT_SQUARE,
+                    ident: Some(ident),
+                    inner: Some(Box::new(index)),
+                    params: None,
+                }));
             }
             return Ok(ExprPossibilities::Stmt(Stmt {
                 stmt: TokenType::IDENTIFIER,

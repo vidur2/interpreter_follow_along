@@ -1,4 +1,4 @@
-use crate::{scanner::token::Primitive, error_reporting::interp_err::InterpException};
+use crate::{error_reporting::interp_err::InterpException, scanner::token::Primitive};
 
 pub fn append(list: &mut Vec<Primitive>, new: Primitive) {
     list.push(new);
@@ -6,7 +6,7 @@ pub fn append(list: &mut Vec<Primitive>, new: Primitive) {
 
 pub fn set(list: &mut Vec<Primitive>, idx: Primitive, primitive: Primitive) {
     if let Primitive::Int(idx_uw) = idx {
-        list[idx_uw as usize] = primitive; 
+        list[idx_uw as usize] = primitive;
     }
 }
 

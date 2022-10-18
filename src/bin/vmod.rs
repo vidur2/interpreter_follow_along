@@ -1,24 +1,14 @@
 #![feature(let_chains)]
-#![feature(const_for)]
-#![feature(const_mut_refs)]
-#![feature(iterator_try_collect)]
-
-mod ast;
-mod error_reporting;
-mod import_sys;
-mod interpreter;
-mod parser;
-mod scanner;
-mod lib_functions;
 
 use std::{collections::VecDeque, env};
 
-use ast::expr_types::ExprPossibilities;
-use import_sys::import_sys::Importer;
-use interpreter::interpreter::Interpreter;
+use vmod::ast::expr_types::ExprPossibilities;
+use vmod::import_sys::import_sys::Importer;
+use vmod::interpreter::interpreter::Interpreter;
 // use ast::ast_printer::AstPrinter;
-use parser::parser::Parser;
-use scanner::token::{Token, TokenType};
+use vmod::parser::parser::Parser;
+use vmod::scanner::scanner;
+use vmod::scanner::token::{Token, TokenType};
 
 // static PRINTER: AstPrinter = AstPrinter;
 
@@ -29,8 +19,8 @@ fn main() {
     if args.len() > 2 {
         println!("Error: format: interpreter_follow_along [filepath]")
     } else if args.len() == 1 {
-        scanner::scanner::Scanner::accept_input();
-    } else if let Ok(mut scanner) = scanner::scanner::Scanner::input_file(&args[1]) {
+        vmod::scanner::scanner::Scanner::accept_input();
+    } else if let Ok(mut scanner) = vmod::scanner::scanner::Scanner::input_file(&args[1]) {
         scanner.tokenize_buff();
         scanner.token.push(Token {
             tok: TokenType::EOF,
@@ -56,7 +46,7 @@ fn main() {
         for expr in expressions.iter() {
             interpreter.interpret(expr);
         }
-    } else if let Err(err) = scanner::scanner::Scanner::input_file(&args[1]) {
+    } else if let Err(err) = vmod::scanner::scanner::Scanner::input_file(&args[1]) {
         println!("{}", err);
     }
 }

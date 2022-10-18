@@ -1,13 +1,17 @@
-use std::{collections::{HashSet, VecDeque}, fs::ReadDir};
+use std::{
+    collections::{HashSet, VecDeque},
+    fs::ReadDir,
+};
 
 use crate::{
     ast::expr_types::{ExprPossibilities, Literal, Scope, Stmt},
     interpreter::{environment::Environment, interpreter::Interpreter},
+    lib_functions::BUILTINS,
     parser::parser::Parser,
     scanner::{
         scanner::Scanner,
         token::{Func, Token, TokenType},
-    }, lib_functions::BUILTINS,
+    },
 };
 
 pub struct Importer {
@@ -21,7 +25,12 @@ impl Importer {
         };
     }
 
-    pub fn import_files(&mut self, files: HashSet<String>, global_interp: &mut Interpreter, base_filename: String) {
+    pub fn import_files(
+        &mut self,
+        files: HashSet<String>,
+        global_interp: &mut Interpreter,
+        base_filename: String,
+    ) {
         let mut files = files;
 
         let mut dir_string = String::new();
@@ -32,7 +41,15 @@ impl Importer {
             dir_string += (dir.to_string() + "/").as_str();
         }
         let dir_paths = std::fs::read_dir("./".to_string() + &dir_string).unwrap();
-        let lib_path = std::env::current_exe().unwrap().parent().unwrap().as_os_str().to_str().unwrap().to_string() + "/vmod_lib";
+        let lib_path = std::env::current_exe()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .as_os_str()
+            .to_str()
+            .unwrap()
+            .to_string()
+            + "/vmod_lib";
 
         for builtin in BUILTINS.iter() {
             if files.contains(&builtin.to_string()) {
