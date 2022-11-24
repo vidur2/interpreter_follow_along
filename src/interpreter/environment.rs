@@ -1,14 +1,26 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::{Mutex, Arc}};
 
 use crate::{
     error_reporting::{interp_err::InterpException, parsing_err::ParsingException},
     scanner::token::Primitive,
 };
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
+pub enum Enclosing {
+    Unshared(Box<Environment>),
+    Shared(Arc<Mutex<Environment>>)
+}
+
+#[derive(Clone, Debug)]
 pub struct Environment {
     pub vars: HashMap<String, Primitive>,
     pub enclosing: Option<Box<Environment>>,
+}
+
+impl PartialEq for Environment {
+    fn eq(&self, other: &Self) -> bool {
+        self.vars == other.vars
+    }
 }
 
 impl PartialOrd for Environment {

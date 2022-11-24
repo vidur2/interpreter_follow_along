@@ -47,7 +47,7 @@ impl Interpreter {
         }
     }
 
-    fn evaluate(&mut self, expr: &ExprPossibilities) -> Result<Primitive, InterpException> {
+    pub fn evaluate(&mut self, expr: &ExprPossibilities) -> Result<Primitive, InterpException> {
         return ExprPossibilities::accept(expr.clone(), self);
     }
 

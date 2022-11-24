@@ -5,6 +5,7 @@ use self::math::Math;
 pub mod cast_ops;
 pub mod list_ops;
 pub mod math;
+pub mod thread;
 
 pub const BUILTINS: [&str; 1] = ["math"];
 
@@ -31,6 +32,9 @@ pub fn import_lib(import_name: &str) -> Environment {
     match import_name {
         "math" => {
             return Math::new();
+        },
+        "thread" => {
+            todo!();
         }
         _ => todo!(),
     }

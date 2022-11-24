@@ -6,7 +6,6 @@ use crate::{
 use super::{LibFunctions, MathLibFunctions};
 
 pub struct Math {
-    env: Environment,
 }
 
 impl Math {
