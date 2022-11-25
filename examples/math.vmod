@@ -4,4 +4,4 @@ env math {
     println(sin(0.5235));
 }
 
-println(sin(0));
+// println(sin(0));

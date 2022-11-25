@@ -1,3 +1,15 @@
-func test() {
-    println("hello");
+decenv test = {
+    let x = 5;
+}
+
+env test {
+    for (let i = 0; i < 10; i = i + 1) {
+        x = x + i;
+    }
+}
+
+// println(x);
+
+env test {
+    println(x);
 }

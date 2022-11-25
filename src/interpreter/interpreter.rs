@@ -498,7 +498,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                         unsafe {
                             // println!("{:?}", scope);
                             let clos_ident = scope.ident.unwrap_unchecked().lexeme;
-                            let cloned_ref = Arc::clone(&self.globals);
+                            let cloned_ref = self.globals.clone();
                             let global_vars = cloned_ref.lock().unwrap();
                             let data = global_vars.retrieve(&clos_ident)?;
                             if let Primitive::Env(env) = data {
@@ -513,7 +513,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                 }
 
                                 for key in env.clone().vars.keys() {
-                                    let value = global_vars.retrieve(key)?;
+                                    let value = self.globals.lock().unwrap().retrieve(key)?;
                                     if let Primitive::Env(env2) = value {
                                         env.define_env(key, env2.vars);
                                     } else {
@@ -521,7 +521,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                     }
                                 }
 
-                                self.globals = *global_vars.enclosing.clone().unwrap_unchecked();
+                                self.globals = Arc::new(Mutex::new(global_vars.clone()));
                                 drop(global_vars);
                                 self.globals.lock().unwrap().define_env(&clos_ident, env.vars);
 
