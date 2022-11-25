@@ -300,7 +300,6 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                 TokenType::FUNC => unsafe {
                     let ident = stmt.ident.unwrap_unchecked();
                     let func_data = Arc::clone(&self.globals).lock().unwrap().retrieve(&ident.lexeme)?;
-
                     if let Primitive::Func(func) = func_data {
                         let inputted_params = stmt.params.unwrap_unchecked();
                         match func.func_map.get(&inputted_params.clone().len()) {
@@ -321,23 +320,22 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                         return Ok(prim);
                                     }
                                 }
+                                // let mut global_vars = self.globals.lock().unwrap();
+                                
+                                // let enc =
+                                //     global_vars.enclosing.clone().unwrap_unchecked().clone();
 
-                                let mut global_vars = self.globals.lock().unwrap();
 
-                                let enc =
-                                    global_vars.enclosing.clone().unwrap_unchecked().clone();
-
-                                    
-                                for key in enc.clone().lock().unwrap().vars.keys() {
-                                    let value = self.globals.lock().unwrap().retrieve(key).unwrap_unchecked();
-                                    if let Primitive::Env(env) = value {
-                                        global_vars.define_env(key, env.vars);
-                                    } else {
-                                        global_vars.define(key, value);
-                                    }
-                                }
-                                drop(global_vars);
-                                self.globals = *enc;
+                                // for key in enc.clone().lock().unwrap().vars.keys() {
+                                //     let value = global_vars.retrieve(key).unwrap_unchecked();
+                                //     if let Primitive::Env(env) = value {
+                                //         global_vars.define_env(key, env.vars);
+                                //     } else {
+                                //         global_vars.define(key, value);
+                                //     }
+                                // }
+                                // drop(global_vars);
+                                // self.globals = *enc;
                                 return Ok(Primitive::None);
                             }
                             None => {
@@ -456,9 +454,9 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                     }
                     TokenType::FUNC => unsafe {
                         let close_ident = scope.ident.clone().unwrap_unchecked().clone();
-                        // let global_vars = self.globals.lock().unwrap();
+                        let global_vars = self.globals.lock().unwrap();
                         if let Ok(Primitive::Func(func)) =
-                            self.globals.lock().unwrap().retrieve(&close_ident.lexeme)
+                            global_vars.retrieve(&close_ident.lexeme)
                         {
                             let mut func = func.clone();
                             let args = scope.params.clone().unwrap_unchecked();
@@ -470,6 +468,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                 return Err(InterpException::PlaceHolder);
                             }
                         } else {
+                            drop(global_vars);
                             let mut func_map = HashMap::new();
                             let params = scope.params.clone().unwrap_unchecked();
                             func_map.insert(params.len(), (params, Box::new(scope)));

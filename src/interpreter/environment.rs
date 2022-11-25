@@ -53,10 +53,13 @@ impl Environment {
 
     pub fn retrieve(&self, name: &str) -> Result<Primitive, InterpException> {
         if let Some(val) = self.vars.get(name) {
+            // println!("1: {}", name);
             return Ok(val.clone());
         } else if let Some(higher) = &self.enclosing {
-            return higher.as_ref().lock().unwrap().retrieve(name);
+            // println!("2: {}", name);
+            return higher.lock().unwrap().retrieve(name);
         } else {
+            // println!("3: {}", name);
             return Err(InterpException::IdentifierNoExist(name.to_string()));
         }
     }
