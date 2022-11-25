@@ -5,7 +5,7 @@ use self::math::Math;
 pub mod cast_ops;
 pub mod list_ops;
 pub mod math;
-pub mod thread;
+// pub mod thread;
 
 pub const BUILTINS: [&str; 1] = ["math"];
 

@@ -6,15 +6,9 @@ use crate::{
 };
 
 #[derive(Clone, Debug)]
-pub enum Enclosing {
-    Unshared(Box<Environment>),
-    Shared(Arc<Mutex<Environment>>)
-}
-
-#[derive(Clone, Debug)]
 pub struct Environment {
     pub vars: HashMap<String, Primitive>,
-    pub enclosing: Option<Box<Environment>>,
+    pub enclosing: Option<Box<Arc<Mutex<Environment>>>>,
 }
 
 impl PartialEq for Environment {
@@ -61,7 +55,7 @@ impl Environment {
         if let Some(val) = self.vars.get(name) {
             return Ok(val.clone());
         } else if let Some(higher) = &self.enclosing {
-            return higher.as_ref().retrieve(name);
+            return higher.as_ref().lock().unwrap().retrieve(name);
         } else {
             return Err(InterpException::IdentifierNoExist(name.to_string()));
         }
@@ -76,7 +70,7 @@ impl Environment {
             }
             return Ok(());
         } else if let Some(mut enc) = self.enclosing.clone() {
-            enc.as_mut().redefine(name, value)?;
+            enc.as_mut().lock().unwrap().redefine(name, value)?;
             self.enclosing = Some(enc);
             return Ok(());
         } else {

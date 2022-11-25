@@ -1,4 +1,4 @@
-use std::thread;
+use std::{thread, sync::{Arc, Mutex}};
 
 use crate::{interpreter::{environment::Environment, interpreter::Interpreter}, error_reporting::interp_err::InterpException, scanner::token::{Primitive, Token}};
 
@@ -12,14 +12,14 @@ pub fn spawn(thread_env: &mut Environment, target_env: &mut Environment, func_pt
     if let Primitive::Func(func) = func {
         let mut interpreter = Interpreter::new();
         interpreter.globals = Environment::new();
-        interpreter.globals.enclosing = Some(Box::new(target_env.clone()));
+        interpreter.globals.enclosing = Some(Box::new(Arc::new(Mutex::new(target_env.clone()))));
         thread::spawn(move || {
             let mut result: Result<Primitive, InterpException>;
             for expr in func.func_map.get(&args_len).unwrap().1.as_ref().inner.iter() {
                 result = interpreter.evaluate(expr);
             }
 
-            target_env = &mut interpreter.globals.enclosing.unwrap();
+            // target_env = &mut interpreter.globals.enclosing.unwrap();
         });
     }
 

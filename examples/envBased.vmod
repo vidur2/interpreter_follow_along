@@ -4,5 +4,5 @@ func bar() {
 
 decenv example = {
     let foo = 10;
-    let bar = bar;
+    // let bar = bar;
 }

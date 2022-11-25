@@ -50,12 +50,12 @@ impl Importer {
             .unwrap()
             .to_string()
             + "/vmod_lib";
-
+        let mut global_interp_vars = global_interp.globals.lock().unwrap();
         for builtin in BUILTINS.iter() {
             if files.contains(&builtin.to_string()) {
                 files.remove(&builtin.to_string());
                 let env = crate::lib_functions::import_lib(&builtin);
-                global_interp.globals.define_env(builtin, env.vars);
+                global_interp_vars.define_env(builtin, env.vars);
             }
         }
 
@@ -84,9 +84,8 @@ impl Importer {
                         }
                     }
                 }
-                global_interp
-                    .globals
-                    .define_env(split_file[0], interpreter.globals.vars);
+                global_interp_vars
+                    .define_env(split_file[0], interpreter.globals.lock().unwrap().vars.clone());
             }
         }
     }

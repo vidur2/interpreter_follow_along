@@ -2,6 +2,6 @@ import math;
 
 env math {
     println(sin(0.5235));
-    println(cos(0.5235));
-    println(tan(0.5235));
 }
+
+println(sin(0));
