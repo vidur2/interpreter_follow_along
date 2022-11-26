@@ -347,9 +347,11 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                         let params = &stmt.params.unwrap_unchecked();
                         match func {
                             LibFunctions::Append => {
-                                if let Primitive::String(ident) = self.globals.clone().lock().unwrap().retrieve("list")? {
-                                    let list = self.globals.lock().unwrap().retrieve(&ident)?.clone();
+                                let globals = self.globals.lock().unwrap();
+                                if let Primitive::String(ident) = globals.retrieve("list")? {
+                                    let list = globals.retrieve(&ident)?.clone();
                                     if let Primitive::List(mut list_uw) = list {
+                                        drop(globals);
                                         for param in params.iter() {
                                             append(&mut list_uw, self.evaluate(&param)?);
                                         }
@@ -358,8 +360,10 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                 };
                             }
                             LibFunctions::Set => {
-                                if let Primitive::String(ident) = self.globals.clone().lock().unwrap().retrieve("list")? {
-                                    let list = self.globals.lock().unwrap().retrieve(&ident)?;
+                                let globals = self.globals.lock().unwrap();
+                                if let Primitive::String(ident) = globals.retrieve("list")? {
+                                    let list = globals.retrieve(&ident)?;
+                                    drop(globals);
                                     if let Primitive::List(mut list_uw) = list {
                                         set(
                                             &mut list_uw,
@@ -381,16 +385,21 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                             }
                             LibFunctions::Slice => {
                                 if params.len() == 2 {
-                                    // let mut global_vars = self.globals.lock().unwrap();
+                                    let global_vars = self.globals.lock().unwrap();
                                     if let Primitive::String(ident) =
-                                        self.globals.clone().lock().unwrap().retrieve("list")?
+                                        global_vars.retrieve("list")?
                                     {
-                                        let list = self.globals.lock().unwrap().retrieve(&ident)?;
+                                        let list = global_vars.retrieve(&ident)?;
                                         if let Primitive::List(mut list_uw) = list {
+                                            drop(global_vars);
                                             if let Primitive::Int(idx1) = self.evaluate(&params[0])? && let Primitive::Int(idx2) = self.evaluate(&params[1])? {
                                                 let vec = slice(&mut list_uw, idx1 as usize, idx2 as usize);
                                                 self.globals.lock().unwrap().redefine(&ident, Primitive::List(list_uw))?;
-                                                return Ok(Primitive::List(vec));
+                                                if vec.len() != 1 {
+                                                    return Ok(Primitive::List(vec));
+                                                } else {
+                                                    return Ok(vec[0].clone());
+                                                }
                                             }
                                         }
                                     };
