@@ -1,24 +1,25 @@
 use crate::interpreter::environment::Environment;
 
-use self::math::Math;
+use self::{math::Math, thread::{Thread, new}};
 
 pub mod cast_ops;
 pub mod list_ops;
 pub mod math;
 pub mod thread;
 
-pub const BUILTINS: [&str; 1] = ["math"];
+pub const BUILTINS: [&str; 2] = ["math", "thread"];
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
-pub enum LibFunctions {
+pub enum NativeFunc {
     Append,
     Set,
     Len,
     Slice,
     Math(MathLibFunctions),
+    Thread(Thread),
     Int,
     Float,
-    String,
+    String
 }
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
@@ -34,7 +35,7 @@ pub fn import_lib(import_name: &str) -> Environment {
             return Math::new();
         },
         "thread" => {
-            todo!();
+            return new();
         }
         _ => todo!(),
     }

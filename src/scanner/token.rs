@@ -9,7 +9,7 @@ use crate::{
     ast::expr_types::{Scope, Stmt},
     error_reporting::{error_reporter::Literal, scanning_err::ScanningException},
     interpreter::environment::Environment,
-    lib_functions::LibFunctions,
+    lib_functions::NativeFunc,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -188,7 +188,7 @@ pub enum Primitive {
     Bool(bool),
     Env(Environment),
     Func(Func),
-    NativeFunc(LibFunctions),
+    NativeFunc(NativeFunc),
     List(Vec<Primitive>),
     None,
 }

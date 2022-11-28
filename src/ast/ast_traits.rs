@@ -1,5 +1,5 @@
 use crate::{
-    error_reporting::{interp_err::InterpException, parsing_err::ParsingException},
+    error_reporting::{interp_err::InterpException},
     scanner::token::Primitive,
 };
 

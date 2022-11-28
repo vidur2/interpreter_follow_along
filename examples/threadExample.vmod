@@ -1,0 +1,29 @@
+import thread;
+
+func test() {
+    println("hello");
+
+    return 5;
+}
+
+func add(num) {
+    println(num);
+}
+
+func increment() {
+    x = x + 1;
+    return x;
+}
+
+decenv multithreaded = {
+    let x = 11;
+    let increment = increment;
+}
+
+env thread {
+    env multithreaded {
+        spawn(increment, 0, add);
+    }
+}
+
+while true {}

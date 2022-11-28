@@ -3,7 +3,7 @@ use crate::{
     interpreter::environment::Environment, scanner::token::Primitive,
 };
 
-use super::{LibFunctions, MathLibFunctions};
+use super::{NativeFunc, MathLibFunctions};
 
 pub struct Math {
 }
@@ -14,15 +14,15 @@ impl Math {
 
         ret_env.define(
             "sin",
-            Primitive::NativeFunc(LibFunctions::Math(MathLibFunctions::Sin)),
+            Primitive::NativeFunc(NativeFunc::Math(MathLibFunctions::Sin)),
         );
         ret_env.define(
             "cos",
-            Primitive::NativeFunc(LibFunctions::Math(MathLibFunctions::Cos)),
+            Primitive::NativeFunc(NativeFunc::Math(MathLibFunctions::Cos)),
         );
         ret_env.define(
             "tan",
-            Primitive::NativeFunc(LibFunctions::Math(MathLibFunctions::Tan)),
+            Primitive::NativeFunc(NativeFunc::Math(MathLibFunctions::Tan)),
         );
         return ret_env;
     }

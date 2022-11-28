@@ -11,7 +11,7 @@ use crate::{
     lib_functions::{
         list_ops::{append, len, set, slice},
         math::Math,
-        LibFunctions,
+        NativeFunc, thread::spawn,
     },
     scanner::token::{Func, Primitive, TokenType},
 };
@@ -25,10 +25,10 @@ pub struct Interpreter {
 impl Interpreter {
     pub fn new() -> Self {
         let mut globals = Environment::new();
-        globals.define("len", Primitive::NativeFunc(LibFunctions::Len));
-        globals.define("int", Primitive::NativeFunc(LibFunctions::Int));
-        globals.define("float", Primitive::NativeFunc(LibFunctions::Float));
-        globals.define("str", Primitive::NativeFunc(LibFunctions::String));
+        globals.define("len", Primitive::NativeFunc(NativeFunc::Len));
+        globals.define("int", Primitive::NativeFunc(NativeFunc::Int));
+        globals.define("float", Primitive::NativeFunc(NativeFunc::Float));
+        globals.define("str", Primitive::NativeFunc(NativeFunc::String));
         return Self { globals: Arc::new(Mutex::new(globals)) };
     }
 
@@ -346,7 +346,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                     } else if let Primitive::NativeFunc(func) = func_data {
                         let params = &stmt.params.unwrap_unchecked();
                         match func {
-                            LibFunctions::Append => {
+                            NativeFunc::Append => {
                                 let globals = self.globals.lock().unwrap();
                                 if let Primitive::String(ident) = globals.retrieve("list")? {
                                     let list = globals.retrieve(&ident)?.clone();
@@ -359,7 +359,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                     }
                                 };
                             }
-                            LibFunctions::Set => {
+                            NativeFunc::Set => {
                                 let globals = self.globals.lock().unwrap();
                                 if let Primitive::String(ident) = globals.retrieve("list")? {
                                     let list = globals.retrieve(&ident)?;
@@ -374,7 +374,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                     }
                                 };
                             }
-                            LibFunctions::Len => {
+                            NativeFunc::Len => {
                                 if params.len() == 1 {
                                     if let Primitive::Env(env) = self.evaluate(&params[0])? && let Primitive::String(string) = env.retrieve("list")? && let Primitive::List(list_uw) = env.retrieve(&string)? {
                                         return Ok(len(&list_uw));
@@ -383,7 +383,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                     }
                                 }
                             }
-                            LibFunctions::Slice => {
+                            NativeFunc::Slice => {
                                 if params.len() == 2 {
                                     let global_vars = self.globals.lock().unwrap();
                                     if let Primitive::String(ident) =
@@ -405,7 +405,7 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                     };
                                 }
                             }
-                            LibFunctions::Math(var) => {
+                            NativeFunc::Math(var) => {
                                 let params_parsed: Vec<Result<Primitive, InterpException>> = params
                                     .as_ref()
                                     .iter()
@@ -413,17 +413,35 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                     .collect();
                                 return Math::do_func(var, params_parsed);
                             }
-                            LibFunctions::Int => {
+                            NativeFunc::Int => {
                                 return Ok(crate::lib_functions::cast_ops::int(
                                     self.evaluate(&params[0])?,
                                 ))
                             }
-                            LibFunctions::String => {
+                            NativeFunc::String => {
                                 return Ok(crate::lib_functions::cast_ops::string(
                                     self.evaluate(&params[0])?,
                                 ))
                             }
-                            LibFunctions::Float => todo!(),
+                            NativeFunc::Float => todo!(),
+                            NativeFunc::Thread(func) => {
+                                match func {
+                                    crate::lib_functions::thread::Thread::Spawn => {
+                                        let mut params_parsed: Vec<String> = Vec::new();
+                                        params.iter().for_each(|param| {
+                                            let prim = self.evaluate(&param).unwrap();
+                                            if let Primitive::Func(parsed) = prim {
+                                                let mut key = parsed.func_map.keys();
+                                                params_parsed.push(parsed.func_map.get(key.next().unwrap()).unwrap().1.ident.as_ref().unwrap().lexeme.clone());
+                                            } else if let Primitive::Int(num) = prim {
+                                                params_parsed.push(num.to_string());
+                                            }
+                                        });
+
+                                        spawn(Arc::clone(&self.globals), params_parsed[0].as_str(), params_parsed[1].parse().unwrap(), params_parsed[2].clone())?;
+                                    },
+                                }
+                            },
                         }
                         return Ok(Primitive::None);
                     } else {
@@ -623,19 +641,19 @@ impl Interpreter {
         vars.insert(String::from(ident), Primitive::List(list));
         vars.insert(
             String::from("set"),
-            Primitive::NativeFunc(LibFunctions::Set),
+            Primitive::NativeFunc(NativeFunc::Set),
         );
         vars.insert(
             String::from("len"),
-            Primitive::NativeFunc(LibFunctions::Len),
+            Primitive::NativeFunc(NativeFunc::Len),
         );
         vars.insert(
             String::from("append"),
-            Primitive::NativeFunc(LibFunctions::Append),
+            Primitive::NativeFunc(NativeFunc::Append),
         );
         vars.insert(
             String::from("slice"),
-            Primitive::NativeFunc(LibFunctions::Slice),
+            Primitive::NativeFunc(NativeFunc::Slice),
         );
         self.globals
             .lock()
