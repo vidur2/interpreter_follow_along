@@ -11,13 +11,16 @@ func add(num) {
 }
 
 func increment() {
-    x = x + 1;
-    return x;
+    println(x);
+    env x {
+        println(len(x));
+    }
 }
 
 decenv multithreaded = {
-    let x = 11;
+    let x = [1, 23];
     let increment = increment;
+    let returned = null;
 }
 
 env thread {

@@ -2,6 +2,8 @@ use std::{thread, sync::{Arc, Mutex}};
 
 use crate::{interpreter::{environment::Environment, interpreter::Interpreter}, error_reporting::interp_err::InterpException, scanner::token::{Primitive, Token}};
 
+const FUT_KEY: &str = "returned";
+
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub enum Thread {
     Spawn
@@ -13,8 +15,9 @@ pub fn new() -> Environment {
     return ret_env;
 }
 pub fn spawn(target_env: Arc<Mutex<Environment>>, func_ptr: &str, args_len: usize, callback_ptr: String) -> Result<(), InterpException> {
-    let env = target_env.lock().unwrap();
+    let mut env = target_env.lock().unwrap();
     let func = env.retrieve(func_ptr)?;
+    env.define(FUT_KEY, Primitive::None);
     drop(env);
     if let Primitive::Func(func) = func {
         let mut interpreter = Interpreter::new();
@@ -26,8 +29,10 @@ pub fn spawn(target_env: Arc<Mutex<Environment>>, func_ptr: &str, args_len: usiz
                 result = interpreter.evaluate(expr).unwrap();
             }
 
-            let callback = interpreter.globals.lock().unwrap().retrieve(&callback_ptr).unwrap();
-
+            let mut multi = interpreter.globals.lock().unwrap();
+            multi.redefine(FUT_KEY, result.clone()).unwrap();
+            let callback = multi.retrieve(&callback_ptr).unwrap();
+            drop(multi);
             if let Primitive::Func(callback) = callback {
                 let code = &callback.func_map.get(&1).unwrap().1.as_ref().inner;
                 let param_name = &callback.func_map.get(&1).unwrap().0[0].lexeme;

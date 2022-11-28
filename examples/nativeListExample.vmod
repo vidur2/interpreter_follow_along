@@ -1,8 +1,14 @@
 let x = [5, 6, 7];
 
+func test(x, num) {
+    env x {
+        append(num);
+    }
+}
+
 env x {
     let x[0] = 10;
     let x[2] = 80;
-    append(5);
-    println(slice(0, 2));
+    append(x, 5);
+    println(x);
 }

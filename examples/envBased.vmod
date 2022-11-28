@@ -11,5 +11,8 @@ decenv example = {
 env example {
     bar();
     bar();
+}
+
+env example {
     println(foo);
 }
