@@ -1,0 +1,17 @@
+decenv test = {
+    let i = 90;
+}
+
+func inc() {
+    while i< 100 {
+        i = i + 1;
+    }
+}
+
+env test {
+    inc();
+}
+
+env test {
+    println(i);
+}

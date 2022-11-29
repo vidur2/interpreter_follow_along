@@ -1,32 +1,37 @@
 import thread;
 
-func test() {
-    println("hello");
-
-    return 5;
-}
-
-func add(num) {
-    println(num);
-}
-
 func increment() {
-    println(x);
     env x {
-        println(len(x));
+        append(10);
+        append(100);
+    }
+    return true;
+}
+
+func callback(y) {
+    env x {
+        println(x);
     }
 }
 
+
+let x = [1, 23];
+
+
 decenv multithreaded = {
-    let x = [1, 23];
+    let x = x;
     let increment = increment;
-    let returned = null;
 }
 
 env thread {
     env multithreaded {
-        spawn(increment, 0, add);
+        spawn(increment, 0, callback)
     }
 }
 
-while true {}
+
+env multithreaded {
+    env x {
+        println(x);
+    }
+}

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::Deref, rc::Rc, sync::{Arc, Mutex}};
+use std::{collections::HashMap, ops::Deref, rc::Rc, sync::{Arc, Mutex}, thread::JoinHandle};
 
 use crate::{
     ast::{
@@ -20,6 +20,8 @@ use super::environment::Environment;
 
 pub struct Interpreter {
     pub globals: Arc<Mutex<Environment>>,
+    pub in_thread_env: HashMap<String, JoinHandle<Environment>>,
+    pub clos_ident: Option<String>
 }
 
 impl Interpreter {
@@ -29,7 +31,7 @@ impl Interpreter {
         globals.define("int", Primitive::NativeFunc(NativeFunc::Int));
         globals.define("float", Primitive::NativeFunc(NativeFunc::Float));
         globals.define("str", Primitive::NativeFunc(NativeFunc::String));
-        return Self { globals: Arc::new(Mutex::new(globals)) };
+        return Self { globals: Arc::new(Mutex::new(globals)), in_thread_env: HashMap::new(), clos_ident: None };
     }
 
     pub fn interpret(&mut self, expr: &ExprPossibilities) {
@@ -438,7 +440,11 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                             }
                                         });
 
-                                        spawn(Arc::clone(&self.globals), params_parsed[0].as_str(), params_parsed[1].parse().unwrap(), params_parsed[2].clone())?;
+                                        if let Some(ident) = &self.clos_ident {
+                                            self.in_thread_env.insert(ident.clone(), spawn(Arc::clone(&self.globals), params_parsed[0].as_str(), params_parsed[1].parse().unwrap(), params_parsed[2].clone())?.unwrap());
+                                        } else {
+                                            spawn(Arc::clone(&self.globals), params_parsed[0].as_str(), params_parsed[1].parse().unwrap(), params_parsed[2].clone())?.unwrap();
+                                        }
                                     },
                                 }
                             },
@@ -522,8 +528,11 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                     },
                     TokenType::CLOSCALL => {
                         unsafe {
-                            // println!("{:?}", scope);
                             let clos_ident = scope.ident.unwrap_unchecked().lexeme;
+                            if let Some(val) = self.in_thread_env.remove(&clos_ident) {
+                                self.globals.lock().unwrap().define_env(&clos_ident, val.join().unwrap().vars);
+                            }
+                            self.clos_ident = Some(clos_ident.clone());
                             let cloned_ref = self.globals.clone();
                             let global_vars = cloned_ref.lock().unwrap();
                             let data = global_vars.retrieve(&clos_ident)?;
@@ -584,19 +593,21 @@ impl Interperable<Result<Primitive, InterpException>> for Interpreter {
                                         return Ok(prim);
                                     }
                                 }
+
                             }
 
-                            let prev_globals = self.globals.lock().unwrap().enclosing.clone().unwrap_unchecked();
-                            let mut enc = prev_globals.lock().unwrap();
-
-                            for key in enc.clone().vars.keys() {
-                                let value = self.globals.lock().unwrap().retrieve(key).unwrap_unchecked();
-                                if let Primitive::Env(env) = value {
-                                    enc.define_env(key, env.vars);
-                                } else {
-                                    enc.define(key, value);
-                                }
-                            }
+                            // let prev_globals = self.globals.lock().unwrap().enclosing.clone().unwrap_unchecked();
+                            // // println!("Before");
+                            // let mut enc = prev_globals.lock().unwrap();
+                            // // println!("After");
+                            // for key in enc.clone().vars.keys() {
+                            //     let value = self.globals.lock().unwrap().retrieve(key).unwrap_unchecked();
+                            //     if let Primitive::Env(env) = value {
+                            //         enc.define_env(key, env.vars);
+                            //     } else {
+                            //         enc.define(key, value);
+                            //     }
+                            // }
 
                             // self.globals = Arc::new(Mutex::new(*enc));
                         }
